@@ -304,7 +304,7 @@ const dbAll = s => tx(s, 'readonly', o => o.getAll());
 const bkey = (ref, cust, box) => [ref, cust, box].join('|');
 const pkey = (ref, cust, box, layer) => [ref, cust, box, layer].join('|');
 const state = {
-  tab: 'pack', written: {}, saved: {}, done: {}, showDone: false, orders: [], settings: { worker: '', stamp: true, subfolder: false },
+  tab: 'pack', users: [], user: null, act: null, written: {}, saved: {}, done: {}, showDone: false, orders: [], settings: { worker: '', stamp: true, subfolder: false },
   mode: 'so', selSo: '', selInv: '', selCust: '', ref: '', customer: '', boxIn: '', layersIn: '', dateIn: '', yearIn: '',
   viewDate: '', viewUrls: {}, viewStale: true, viewLoading: false,
   boxes: {}, counts: {}, active: null, target: null, busy: false,
@@ -545,6 +545,116 @@ function viewPack(){
   return h;
 }
 // Folder preview for one day: Customer / Year / Date_Customer_Order / boxes, with thumbnails of each layer.
+// ---- device activation + user login ----
+const PUB = {"key_ops":["verify"],"ext":true,"kty":"EC","x":"VmChWsGNDD1xUW5Ljo3tHZRMS9q0QxQ_TtkWhgzGoFI","y":"IXhGmxWPjNOekU_etoJsql71q_g306vO_psZuRmUg7Q","crv":"P-256"};
+const b64u = b => btoa(String.fromCharCode.apply(null, new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+async function verifyCode(code){
+  const [p, sg] = String(code).replace(/\s+/g, '').split('.');
+  const key = await crypto.subtle.importKey('jwk', PUB, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+  if (!p || !sg || !await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, unb64u(sg), unb64u(p))) throw new Error('This code is not valid.');
+  const d = JSON.parse(new TextDecoder().decode(unb64u(p)));
+  if (d.d !== state.dev) throw new Error('This code was made for a different device.');
+  return d;
+}
+async function hashPw(pw, salt){
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  return b64u(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: unb64u(salt), iterations: 150000 }, k, 256));
+}
+async function mkUser(name, pw, role){
+  const salt = b64u(crypto.getRandomValues(new Uint8Array(16)));
+  return { id: b64u(crypto.getRandomValues(new Uint8Array(6))), name, role, salt, hash: await hashPw(pw, salt), off: false };
+}
+const saveUsers = () => dbPut('meta', 'users', state.users);
+const val = id => ($id(id) ? $id(id).value : '');
+function actOk(){ return state.act && (!state.act.e || todayIso() <= state.act.e); }
+function setUser(u){
+  state.user = u; state.settings.worker = u ? u.name : '';
+  if (u) dbPut('meta', 'session', { uid: u.id, until: Date.now() + 12 * 3600e3 }); else dbDel('meta', 'session').catch(() => {});
+}
+function viewAuth(){
+  const m = state.authMsg ? '<div class="notice" style="margin-bottom:10px">' + esc(state.authMsg) + '</div>' : '';
+  let h = '<section class="card"><h2>Pack Photo Log</h2>' + m;
+  if (!actOk()){
+    h += '<p class="step">Activate this device</p><p class="muted">' + (state.act ? 'Your activation has expired. ' : '') + 'Send this Device ID to your administrator and paste the activation code you get back.</p>' +
+      '<div style="font:700 22px monospace;letter-spacing:1px;text-align:center;padding:12px;background:#eef2ef;border-radius:10px;margin:10px 0">' + esc(state.dev) + '</div>' +
+      '<button class="btn ghost small" data-act="copyid">Copy Device ID</button><textarea id="actcode" rows="4" placeholder="Paste activation code" style="width:100%;margin:10px 0"></textarea><button class="btn big" data-act="activate">Activate</button>';
+  } else if (!state.users.length){
+    h += '<p class="step">Create the administrator</p><p class="muted">Activated for ' + esc(state.act.c || 'this company') + '. This first user manages other users.</p>' +
+      '<input id="nu" placeholder="Administrator name" autocomplete="off"><input id="np" type="password" placeholder="Password (min 6)" style="margin-top:8px"><input id="np2" type="password" placeholder="Repeat password" style="margin-top:8px"><button class="btn big" style="margin-top:10px" data-act="mkadmin">Create and sign in</button>';
+  } else if (state.resetMode){
+    h += '<p class="step">Administrator reset</p><p class="muted">Send this Device ID to the activation administrator and paste the reset code.</p><div style="font:700 18px monospace;text-align:center;margin:8px 0">' + esc(state.dev) + '</div>' +
+      '<textarea id="rstcode" rows="3" placeholder="Paste reset code" style="width:100%"></textarea><input id="np" type="password" placeholder="New administrator password" style="margin-top:8px"><button class="btn big" style="margin-top:10px" data-act="doreset">Reset password</button><button class="btn ghost small" style="margin-top:8px" data-act="resetmode">Back</button>';
+  } else {
+    h += '<p class="step">Sign in</p><label class="lbl" for="lu">User</label><select id="lu">' + state.users.filter(u => !u.off).map(u => '<option value="' + esc(u.id) + '">' + esc(u.name) + '</option>').join('') + '</select>' +
+      '<label class="lbl" for="lp">Password</label><input id="lp" type="password" autocomplete="current-password"><button class="btn big" style="margin-top:12px" data-act="login">Sign in</button><button class="btn ghost small" style="margin-top:8px" data-act="resetmode">Forgot administrator password?</button>';
+  }
+  return h + '</section>';
+}
+function accountCard(){
+  return '<section class="card"><h2>Account</h2><p class="muted">Signed in as <b>' + esc(state.user.name) + '</b> (' + state.user.role + ')<br>Device ' + esc(state.dev) + (state.act && state.act.e ? ' · valid until ' + esc(state.act.e) : '') + '</p>' +
+    '<div class="row"><button class="btn ghost" data-act="chpw">Change my password</button><button class="btn" data-act="logout">Sign out</button></div></section>';
+}
+function usersCard(){
+  let h = '<section class="card"><h2>Users</h2>';
+  for (const u of state.users){
+    h += '<div class="row between" style="margin-bottom:8px"><span' + (u.off ? ' class="muted"' : '') + '><b>' + esc(u.name) + '</b> · ' + u.role + (u.off ? ' · disabled' : '') + '</span><span class="row"><button class="btn ghost small" data-act="uspw" data-id="' + u.id + '">Password</button><button class="btn ghost small" data-act="usoff" data-id="' + u.id + '">' + (u.off ? 'Enable' : 'Disable') + '</button><button class="btn danger small" data-act="usdel" data-id="' + u.id + '">Delete</button></span></div>';
+  }
+  return h + '<p class="step" style="margin-top:14px">Add user</p><input id="nu" placeholder="Name" autocomplete="off"><input id="np" type="password" placeholder="Password (min 6)" style="margin-top:8px"><select id="nr" style="margin-top:8px"><option value="packer">Packer</option><option value="admin">Administrator</option></select><button class="btn" style="margin-top:10px" data-act="adduser">Add user</button></section>';
+}
+const admins = () => state.users.filter(u => u.role === 'admin' && !u.off);
+async function authAct(a, d){
+  state.authMsg = '';
+  try {
+    if (!crypto.subtle) throw new Error('This browser cannot run secure login. Open the app in Chrome.');
+    if (a === 'activate'){
+      const r = await verifyCode(val('actcode')); if (r.t !== 'act') throw new Error('This is not an activation code.');
+      if (r.e && todayIso() > r.e) throw new Error('This code has already expired.');
+      state.act = r; await dbPut('meta', 'act', val('actcode').replace(/\s+/g, ''));
+    } else if (a === 'mkadmin'){
+      const n = val('nu').trim(), p = val('np'); if (!n) throw new Error('Enter a name.'); if (p.length < 6) throw new Error('Password needs at least 6 characters.'); if (p !== val('np2')) throw new Error('Passwords do not match.');
+      const u = await mkUser(n, p, 'admin'); state.users = [u]; await saveUsers(); setUser(u);
+    } else if (a === 'login'){
+      if (state.lockUntil > Date.now()) throw new Error('Too many wrong passwords. Wait ' + Math.ceil((state.lockUntil - Date.now()) / 1000) + ' seconds.');
+      const u = state.users.find(x => x.id === val('lu'));
+      if (!u || await hashPw(val('lp'), u.salt) !== u.hash){ state.fails = (state.fails || 0) + 1; if (state.fails >= 5){ state.lockUntil = Date.now() + 30000; state.fails = 0; } throw new Error('Wrong password.'); }
+      state.fails = 0; setUser(u);
+    } else if (a === 'doreset'){
+      const r = await verifyCode(val('rstcode')); if (r.t !== 'rst') throw new Error('This is not a reset code.');
+      const used = (await dbGet('meta', 'usedreset').catch(() => null)) || []; if (used.includes(r.n)) throw new Error('This reset code was already used.');
+      if (val('np').length < 6) throw new Error('Password needs at least 6 characters.');
+      const adm = state.users.find(u => u.role === 'admin'); const nu = await mkUser(adm.name, val('np'), 'admin'); nu.id = adm.id;
+      state.users = state.users.map(u => u.id === adm.id ? nu : u); await saveUsers(); await dbPut('meta', 'usedreset', used.concat(r.n)); state.resetMode = false; setUser(nu);
+    }
+  } catch (e){ state.authMsg = e.message; }
+  render();
+}
+async function userAct(a, d){
+  try {
+    const u = state.users.find(x => x.id === d.id);
+    if (a === 'adduser'){
+      const n = val('nu').trim(), p = val('np'); if (!n || p.length < 6) return toast('Enter a name and a password of 6+ characters.');
+      if (state.users.some(x => x.name.toLowerCase() === n.toLowerCase())) return toast('That name already exists.');
+      state.users.push(await mkUser(n, p, val('nr'))); toast(n + ' added.');
+    } else if (a === 'uspw'){
+      const p = prompt('New password for ' + u.name + ' (min 6 characters)'); if (!p) return; if (p.length < 6) return toast('Password too short.');
+      const nu = await mkUser(u.name, p, u.role); u.salt = nu.salt; u.hash = nu.hash; toast('Password changed.');
+    } else if (a === 'usoff'){
+      if (!u.off && u.role === 'admin' && admins().length < 2) return toast('Keep at least one active administrator.');
+      if (u.id === state.user.id) return toast('You cannot disable yourself.'); u.off = !u.off;
+    } else if (a === 'usdel'){
+      if (u.id === state.user.id) return toast('You cannot delete yourself.');
+      if (u.role === 'admin' && !u.off && admins().length < 2) return toast('Keep at least one active administrator.');
+      if (!confirm('Delete user ' + u.name + '?')) return; state.users = state.users.filter(x => x.id !== u.id);
+    } else if (a === 'chpw'){
+      const o = prompt('Current password'); if (o == null) return; if (await hashPw(o, state.user.salt) !== state.user.hash) return toast('Wrong password.');
+      const p = prompt('New password (min 6 characters)'); if (!p || p.length < 6) return toast('Password too short.');
+      const nu = await mkUser(state.user.name, p, state.user.role); state.user.salt = nu.salt; state.user.hash = nu.hash; toast('Password changed.');
+    }
+    await saveUsers();
+  } catch (e){ toast(e.message); }
+  render();
+}
 // ---- in-app viewer for the save folder ----
 const IMG_RE = /\.(jpe?g|png|webp)$/i;
 function revokeBrowse(){ if (state.browse) for (const it of state.browse.items) if (it.url) URL.revokeObjectURL(it.url); }
@@ -708,6 +818,12 @@ function viewExport(){
   return h;
 }
 function viewData(){
+  const isAdmin = state.user && state.user.role === 'admin';
+  let h = accountCard();
+  if (!isAdmin) return h;
+  return h + viewSetup() + usersCard();
+}
+function viewSetup(){
   const sub = state.settings.subfolder;
   let h = '<section class="card"><h2>Shipment list</h2>';
   h += '<p class="muted">' + (state.orders.length ? state.orders.length + ' rows loaded.' : 'Nothing loaded yet.') + ' Columns needed: S/O No and/or Invoice No, Customer Name. Optional: Total Boxes.</p>';
@@ -722,7 +838,7 @@ function viewData(){
     if (state.dir) h += '<label class="row" style="margin-top:12px"><input type="checkbox" id="autosv"' + (state.settings.autosave !== false ? ' checked' : '') + ' style="width:22px;height:22px"> Auto-save each photo to this folder as it is taken</label>';
   }
   h += '</section>';
-  h += '<section class="card"><h2>Packer</h2><input type="text" id="worker" placeholder="Your name" value="' + esc(state.settings.worker) + '" autocomplete="off">';
+  h += '<section class="card"><h2>Packer</h2><input type="text" id="worker" placeholder="Your name" value="' + esc(state.settings.worker) + '" autocomplete="off" readonly>';
   h += '<label class="row" style="margin-top:12px"><input type="checkbox" id="stamp"' + (state.settings.stamp ? ' checked' : '') + ' style="width:22px;height:22px"> Print order, box, layer, time and name on each photo</label>';
   h += '<label class="lbl" for="psize">Photo size (smaller is faster)</label><select id="psize">' + [[1280, 'Fast · 1280 px'], [1600, 'Standard · 1600 px'], [2400, 'High · 2400 px']].map(o => '<option value="' + o[0] + '"' + ((state.settings.px || 1600) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>';
   h += '</section>';
@@ -732,6 +848,7 @@ function viewData(){
 }
 function render(){
   if (state.fatal){ $id('app').innerHTML = '<section class="card"><h2>Storage unavailable</h2><p>' + esc(state.fatal) + '</p></section>'; return; }
+  if (!state.user || !actOk()){ $id('nav').hidden = true; $id('app').innerHTML = viewAuth(); $id('toast').textContent = state.msg; $id('toast').hidden = !state.msg; return; }
   const v = state.active ? viewCapture : state.browse ? viewBrowse : ({ pack: viewPack, today: viewToday, export: viewExport, data: viewData }[state.tab]);
   $id('app').innerHTML = v();
   $id('nav').hidden = !!state.active;
@@ -1066,6 +1183,11 @@ document.addEventListener('click', async e => {
     case 'zip': await buildZip(d.ref); break;
     case 'pickdir': await pickDir(); break;
     case 'cleardir': await clearDir(); break;
+    case 'activate': case 'mkadmin': case 'login': case 'doreset': await authAct(d.act, d); break;
+    case 'adduser': case 'uspw': case 'usoff': case 'usdel': case 'chpw': await userAct(d.act, d); break;
+    case 'resetmode': state.resetMode = !state.resetMode; state.authMsg = ''; render(); break;
+    case 'copyid': try { await navigator.clipboard.writeText(state.dev); toast('Device ID copied.'); } catch (e){ toast('Select and copy the ID manually.'); } break;
+    case 'logout': if (state.active) closeBox(); setUser(null); state.tab = 'pack'; render(); break;
     case 'openfolder': if (!await dirReady(true)) { toast('Folder access was not allowed.'); break; } await loadBrowse(d.ref ? pathFor(d.ref) : []); break;
     case 'bin': await loadBrowse(state.browse.parts.concat(state.browse.items[+d.i].name)); break;
     case 'bup': await loadBrowse(state.browse.parts.slice(0, -1)); break;
@@ -1124,6 +1246,13 @@ document.addEventListener('change', e => {
   try {
     state.orders = (await dbGet('meta', 'orders')) || [];
     state.settings = Object.assign({ worker: '', stamp: true, subfolder: false, autosave: true }, await dbGet('meta', 'settings'), { subfolder: false });
+    let dev = localStorage.getItem('ppl_dev') || await dbGet('meta', 'dev').catch(() => null);
+    if (!dev){ const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(12)); dev = Array.from(r, x => A[x % 32]).join('').replace(/(.{4})(.{4})(.{4})/, '$1-$2-$3'); }
+    try { localStorage.setItem('ppl_dev', dev); } catch (e){} await dbPut('meta', 'dev', dev); state.dev = dev;
+    state.users = (await dbGet('meta', 'users')) || [];
+    try { const c = await dbGet('meta', 'act'); if (c && crypto.subtle) state.act = await verifyCode(c); } catch (e){ state.act = null; }
+    const ss = await dbGet('meta', 'session').catch(() => null);
+    if (actOk() && ss && ss.until > Date.now()){ const u = state.users.find(x => x.id === ss.uid && !x.off); if (u){ state.user = u; state.settings.worker = u.name; } }
     state.dir = (await dbGet('meta', 'dir').catch(() => null)) || null;
     state.done = (await dbGet('meta', 'done').catch(() => null)) || {};
     state.written = (await dbGet('meta', 'written').catch(() => null)) || {};

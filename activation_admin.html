@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pack Photo Log - Activation Admin</title>
+<style>body{font:16px system-ui,Arial;margin:0;padding:16px;background:#f3f5f3;color:#1b2b22}main{max-width:560px;margin:auto}.c{background:#fff;border:1px solid #d5ddd7;border-radius:14px;padding:16px;margin-bottom:14px}input,textarea,button{font:inherit;width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #b9c5bc;margin:6px 0}button{background:#1f6f4a;color:#fff;border:0;font-weight:700}button.g{background:#fff;color:#1f6f4a;border:1px solid #1f6f4a}code{word-break:break-all;display:block;background:#eef2ef;padding:10px;border-radius:8px;font-size:13px}.w{background:#fff4e0;border:1px solid #f0c36d;border-radius:10px;padding:10px;font-size:14px}</style></head><body><main>
+<h2>Activation Admin</h2><p class="w">Keep this file private. It can create activation codes for every device. Do not send it to users or upload it anywhere.</p>
+<div class="c"><b>Activate a device</b><input id="dev" placeholder="Device ID (XXXX-XXXX-XXXX)" autocapitalize="characters"><input id="co" placeholder="Company / customer name"><label>Valid until (leave empty for no expiry)</label><input id="ex" type="date"><button onclick="act()">Create activation code</button></div>
+<div class="c"><b>Administrator password reset</b><p style="margin:4px 0;font-size:14px">For a user who forgot the administrator password. Uses the Device ID above. Works once.</p><button class="g" onclick="rst()">Create reset code</button></div>
+<div class="c"><b>Code</b><code id="out">-</code><button class="g" onclick="cp()">Copy code</button></div>
+<script>
+const PRIV={"key_ops":["sign"],"ext":true,"kty":"EC","x":"VmChWsGNDD1xUW5Ljo3tHZRMS9q0QxQ_TtkWhgzGoFI","y":"IXhGmxWPjNOekU_etoJsql71q_g306vO_psZuRmUg7Q","crv":"P-256","d":"0TKbHzerFIJEmmD_YJM_BAoHH8aKKubm08uximjEkT4"};
+const b64u=b=>btoa(String.fromCharCode.apply(null,new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+async function sign(o){const k=await crypto.subtle.importKey('jwk',PRIV,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);const p=new TextEncoder().encode(JSON.stringify(o));const s=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},k,p);return b64u(p)+'.'+b64u(s);}
+const dev=()=>{const d=document.getElementById('dev').value.trim().toUpperCase();if(!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(d)){alert('Enter the Device ID shown on the device, like K7F2-9QXM-A4TD');throw 0}return d};
+async function act(){const d=dev();document.getElementById('out').textContent=await sign({t:'act',d:d,c:document.getElementById('co').value.trim(),e:document.getElementById('ex').value||''})}
+async function rst(){const d=dev();document.getElementById('out').textContent=await sign({t:'rst',d:d,n:b64u(crypto.getRandomValues(new Uint8Array(8)))})}
+function cp(){const t=document.getElementById('out').textContent;navigator.clipboard.writeText(t).then(()=>alert('Copied'))}
+</script></main></body></html>
