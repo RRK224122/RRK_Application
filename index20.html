@@ -558,6 +558,67 @@ function viewPack(){
   return h;
 }
 // Folder preview for one day: Customer / Year / Date_Customer_Order / boxes, with thumbnails of each layer.
+// ---- reset and clean-up (administrator only) ----
+function dangerCard(){
+  let h = '<section class="card"><h2>Reset and clean-up</h2><p class="muted">Each action asks you to type a word and enter your administrator password.</p>';
+  if (state.dir) h += '<button class="btn danger" style="margin-bottom:8px;width:100%" data-act="delappfolders">Delete folders created by this app</button><p class="muted" style="margin:0 0 12px">Removes the customer / year / order folders and the log inside ' + esc(state.dir.name) + '. Other files stay.</p><button class="btn danger" style="margin-bottom:8px;width:100%" data-act="emptydir">Empty the selected folder</button><p class="muted" style="margin:0 0 12px">Deletes everything inside ' + esc(state.dir.name) + '. The folder itself stays. Google Drive items go to the Drive trash.</p>';
+  return h + '<button class="btn danger" style="width:100%" data-act="factory">Factory reset this app</button><p class="muted" style="margin:6px 0 0">Erases photos, shipments, users and settings on this phone. Files already in the folder stay. The device stays activated.</p></section>';
+}
+async function confirmAdmin(word, msg){
+  if (!state.user || state.user.role !== 'admin') return false;
+  if (!confirm(msg + '\n\nThis cannot be undone.')) return false;
+  if ((prompt('Type ' + word + ' to confirm') || '').trim() !== word){ toast('Cancelled.'); return false; }
+  const p = prompt('Enter your administrator password'); if (p == null) return false;
+  if (await hashPw(p, state.user.salt) !== state.user.hash){ toast('Wrong password.'); return false; }
+  return true;
+}
+async function removeNames(parent, names){      // repeats, so folders that share a name are all removed
+  let n = 0;
+  for (let round = 0; round < 6; round++){
+    const hit = [];
+    for await (const [nm] of fresh(parent).entries()) if (names(nm)) hit.push(nm);
+    if (!hit.length) break;
+    for (const nm of hit){ try { await parent.removeEntry(nm, { recursive: true }); n++; } catch (e){} }
+  }
+  return n;
+}
+async function isAppCustomerDir(h){
+  for await (const [yn, yh] of fresh(h).entries()) if (yh.kind === 'directory' && /^\d{4}$/.test(yn)) return true;
+  return false;
+}
+async function wipeFolder(all){
+  if (!state.dir) return;
+  const name = state.dir.name;
+  if (!await confirmAdmin(all ? 'EMPTY' : 'DELETE', all ? 'Delete EVERYTHING inside "' + name + '"? Other phones lose it too. Photos still on this phone are not deleted.' : 'Delete the customer, year and order folders and the log created by this app inside "' + name + '"? Other phones lose them too.')) return;
+  try {
+    if (!await dirReady(true)) throw new Error('Folder access was not allowed');
+    state.busy = true; render();
+    const n = await exclusive(async () => {
+      let pick;
+      if (all) pick = () => true;
+      else {
+        const keep = new Set();
+        for await (const [nm, h] of fresh(state.dir).entries()) if (h.kind === 'directory' && (nm.toLowerCase() === 'logs' || await isAppCustomerDir(h))) keep.add(nm);
+        pick = nm => keep.has(nm);
+      }
+      return removeNames(state.dir, pick);
+    });
+    state.known = {}; saveKnown(); dirCache.clear(); state.written = {}; saveWritten(); state.saved = {}; state.remote = []; state.logCache = {}; state.done = {};
+    await dbPut('meta', 'done', {}); await dbPut('meta', 'remote', []); await dbPut('meta', 'logcache', {}).catch(() => {});
+    toast(n + ' item' + (n === 1 ? '' : 's') + ' deleted from ' + name + '.');
+  } catch (e){ toast('Delete stopped: ' + e.message); }
+  state.busy = false; render();
+}
+async function factoryReset(){
+  if (!await confirmAdmin('RESET', 'Erase ALL photos, shipments, users and settings on this phone? Photos not yet saved to the folder are lost. Files already in the folder stay.')) return;
+  try {
+    const act = await dbGet('meta', 'act').catch(() => null), dev = state.dev, db = await openDb();
+    await new Promise((res, rej) => { const names = Array.from(db.objectStoreNames), t = db.transaction(names, 'readwrite'); names.forEach(n => t.objectStore(n).clear()); t.oncomplete = res; t.onerror = () => rej(t.error); });
+    await dbPut('meta', 'dev', dev); if (act) await dbPut('meta', 'act', act);
+    try { localStorage.clear(); localStorage.setItem('ppl_dev', dev); sessionStorage.clear(); } catch (e){}
+    location.reload();
+  } catch (e){ toast('Reset failed: ' + e.message); }
+}
 // ---- device activation + user login ----
 const PUB = {"key_ops":["verify"],"ext":true,"kty":"EC","x":"VmChWsGNDD1xUW5Ljo3tHZRMS9q0QxQ_TtkWhgzGoFI","y":"IXhGmxWPjNOekU_etoJsql71q_g306vO_psZuRmUg7Q","crv":"P-256"};
 const b64u = b => btoa(String.fromCharCode.apply(null, new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -604,7 +665,7 @@ function viewAuth(){
   }
   return h + '</section>';
 }
-const APP_VERSION = 'v22 · common-log';
+const APP_VERSION = 'v23 · reset-tools';
 function accountCard(){
   return '<section class="card"><h2>Account</h2><p class="muted">Signed in as <b>' + esc(state.user.name) + '</b> (' + state.user.role + ')<br>App ' + APP_VERSION + '<br>Device ' + esc(state.dev) + (state.act && state.act.e ? ' · valid until ' + esc(state.act.e) : '') + '</p>' +
     '<div class="row"><button class="btn ghost" data-act="chpw">Change my password</button><button class="btn" data-act="logout">Sign out</button></div></section>';
@@ -849,7 +910,7 @@ function viewData(){
   const isAdmin = state.user && state.user.role === 'admin';
   let h = accountCard();
   if (!isAdmin) return h;
-  return h + viewSetup() + usersCard();
+  return h + viewSetup() + usersCard() + dangerCard();
 }
 function viewSetup(){
   const sub = state.settings.subfolder;
@@ -1588,6 +1649,9 @@ document.addEventListener('click', async e => {
     case 'openremote': if (!await dirReady(true)){ toast('Folder access was not allowed.'); break; } await loadBrowse(d.dir.split('/')); break;
     case 'deepsync': if (await dirReady(true)) await loadShared(false, true); break;
     case 'loadshared': await syncFolder(); break;
+    case 'delappfolders': await wipeFolder(false); break;
+    case 'emptydir': await wipeFolder(true); break;
+    case 'factory': await factoryReset(); break;
     case 'mergedirs': await mergeAll(); break;
     case 'openfolder': if (!await dirReady(true)) { toast('Folder access was not allowed.'); break; } await loadBrowse(d.ref ? pathFor(d.ref) : []); break;
     case 'bin': await loadBrowse(state.browse.parts.concat(state.browse.items[+d.i].name)); break;
