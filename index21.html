@@ -1,0 +1,1765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6f4a">
+<title>Pack Photo Log</title>
+<style>
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --ink:#17201b; --muted:#59675f; --line:#d6ddd8;
+  --accent:#1f6f4a; --accent-ink:#ffffff; --accent-soft:#e1f0e8;
+  --warn:#8a5200; --warn-soft:#fdf0d5; --danger:#b42318;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1512; --surface:#17201b; --ink:#e6ece7; --muted:#9aaaa0; --line:#2c3a32;
+    --accent:#4cb383; --accent-ink:#07140d; --accent-soft:#1c3328;
+    --warn:#f0b44c; --warn-soft:#3a2d12; --danger:#ff8a7a;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:max(12px,env(safe-area-inset-top,0px));padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+h1{font-size:1.15rem;margin:0}
+h2{font-size:1rem;margin:0 0 8px}
+p{margin:0 0 8px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;max-width:560px;margin:0 auto 12px}
+.top small{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.step{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.muted{color:var(--muted);font-size:.9rem}
+input[type=text],input[type=search],input[type=number],select{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-weight:600;padding:13px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer;min-height:48px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+.btn.big{width:100%;min-height:60px;font-size:1.1rem}
+.btn.small{min-height:40px;padding:8px 12px;font-size:.9rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.seg button{flex:1;font:inherit;padding:10px;border:0;background:transparent;color:var(--ink);cursor:pointer;min-height:44px}
+.seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.list{display:flex;flex-direction:column;margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.list button{font:inherit;text-align:left;padding:12px;border:0;border-bottom:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:52px}
+.list button:last-child{border-bottom:0}
+.list b{display:block}
+.list span{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{font:inherit;font-size:.88rem;padding:7px 11px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;min-height:36px}
+.chip.done{background:var(--accent-soft);border-color:var(--accent)}
+.chip.part{background:var(--warn-soft);border-color:var(--warn)}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+.slot{position:relative;aspect-ratio:1;border:2px dashed var(--line);border-radius:8px;background:var(--bg);color:var(--muted);font:inherit;font-weight:700;font-size:1.1rem;padding:0;overflow:hidden;cursor:pointer}
+.slot.filled{border-style:solid;border-color:var(--accent)}
+.slot.target{border-color:var(--ink);border-style:solid}
+.slot img{width:100%;height:100%;object-fit:cover;display:block}
+.slot em{position:absolute;left:4px;top:4px;font-style:normal;font-size:.75rem;background:var(--surface);color:var(--ink);padding:1px 6px;border-radius:99px;border:1px solid var(--line)}
+.preview{width:100%;max-height:46vh;object-fit:contain;background:#000;border-radius:8px;display:block}
+.lbl{display:block;font-size:.8rem;color:var(--muted);margin:12px 0 4px}
+details{margin-top:8px}
+summary{cursor:pointer;font-weight:600;min-height:32px;overflow-wrap:anywhere}
+details details{margin-left:10px;padding-left:10px;border-left:2px solid var(--line)}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:.92rem}
+.big-num{font-variant-numeric:tabular-nums}
+#nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+#nav button{flex:1;font:inherit;font-size:.9rem;padding:14px 6px;border:0;background:transparent;color:var(--muted);cursor:pointer;min-height:56px}
+#nav button.on{color:var(--accent);font-weight:700;box-shadow:inset 0 3px 0 var(--accent)}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:528px;margin:0 auto;background:var(--ink);color:var(--bg);padding:12px 14px;border-radius:8px;z-index:5;font-size:.95rem}
+#toast[hidden]{display:none}
+table{border-collapse:collapse;width:100%}
+td,th{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-size:.9rem}
+.scroll{overflow-x:auto}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="top"><h1>Pack Photo Log</h1><small id="who"></small></div>
+<main id="app"></main>
+<nav id="nav">
+  <button data-act="tab" data-tab="pack">Pack</button>
+  <button data-act="tab" data-tab="today">Today</button>
+  <button data-act="tab" data-tab="export">Shipments</button>
+  <button data-act="tab" data-tab="data">Setup</button>
+</nav>
+<div id="toast" hidden role="status"></div>
+<input id="cam" type="file" accept="image/*" capture="environment" hidden>
+
+<script>
+// ============================== CORE (pure logic, tested in Node) ==============================
+function sanitize(s){
+  const t = String(s == null ? '' : s).replace(/[\\\/:*?"<>|\u0000-\u001f]+/g, '-').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
+  return t || 'NA';
+}
+function fmtDate(iso){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? m[3] + '-' + m[2] + '-' + m[1] : 'NA';
+}
+function orderFolder(customer, ref, iso){ return sanitize(fmtDate(iso) + '_' + customer + '_' + ref); }
+// Customer / Year / DD-MM-YYYY_Customer_Order / Box_n_Layer_n.jpg  (optionally one subfolder per layer)
+function photoPath(o){  // o.ref here is the folder reference (invoice number)
+  const base = sanitize(o.customer) + '/' + sanitize(o.year) + '/' + orderFolder(o.customer, o.ref, o.date) + '/';
+  const f = 'Box_' + o.box + '_Layer_' + o.layer;
+  return base + (o.subfolder ? f + '/' : '') + f + '.jpg';
+}
+
+const CRC_TABLE = (function(){
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+// Stores files without compression (JPEG does not compress further).
+function makeZip(files){
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  const now = new Date();
+  const dt = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dd = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  for (const f of files){
+    const name = enc.encode(f.path), data = f.data, crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dt, true); lh.setUint16(12, dd, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(lh, name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, dt, true); ch.setUint16(14, dd, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(ch, name);
+    offset += 30 + name.length + data.length;
+  }
+  let csize = 0;
+  for (const p of central) csize += p.byteLength;
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, csize, true); end.setUint32(16, offset, true);
+  return new Blob(parts.concat(central, [end]), { type: 'application/zip' });
+}
+
+async function inflateRaw(u8){
+  const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+function readZipDirectory(u8){
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let e = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--){ if (dv.getUint32(i, true) === 0x06054b50){ e = i; break; } }
+  if (e < 0) throw new Error('Not a valid .xlsx file');
+  const count = dv.getUint16(e + 10, true);
+  let p = dv.getUint32(e + 16, true);
+  const dec = new TextDecoder();
+  const entries = {};
+  for (let i = 0; i < count; i++){
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('Damaged .xlsx file');
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nl));
+    entries[name] = { method, csize, lho };
+    p += 46 + nl + xl + cl;
+  }
+  return { dv, entries };
+}
+async function zipEntryText(u8, dir, name){
+  const en = dir.entries[name];
+  if (!en) return null;
+  const nl = dir.dv.getUint16(en.lho + 26, true), xl = dir.dv.getUint16(en.lho + 28, true);
+  const start = en.lho + 30 + nl + xl;
+  let data = u8.subarray(start, start + en.csize);
+  if (en.method === 8) data = await inflateRaw(data);
+  else if (en.method !== 0) throw new Error('Unsupported compression in .xlsx');
+  return new TextDecoder().decode(data);
+}
+function xmlDecode(s){
+  return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&amp;/g, '&');
+}
+function colIndex(ref){
+  const m = /^([A-Z]+)/i.exec(ref); let n = 0;
+  for (const ch of m[1].toUpperCase()) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+}
+function textsOf(xml){
+  let out = '';
+  const re = /<t\b[^>]*>([\s\S]*?)<\/t>/g; let m;
+  while ((m = re.exec(xml))) out += xmlDecode(m[1]);
+  return out;
+}
+async function parseXlsx(u8){
+  const dir = readZipDirectory(u8);
+  const shared = [];
+  const sst = await zipEntryText(u8, dir, 'xl/sharedStrings.xml');
+  if (sst){ const re = /<si\b[^>]*>([\s\S]*?)<\/si>/g; let m; while ((m = re.exec(sst))) shared.push(textsOf(m[1])); }
+  const sheets = Object.keys(dir.entries).filter(n => /^xl\/worksheets\/[^\/]+\.xml$/.test(n)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  if (!sheets.length) throw new Error('No sheet found in the .xlsx file');
+  const xml = await zipEntryText(u8, dir, sheets[0]);
+  const rows = [];
+  const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g; let rm;
+  while ((rm = rowRe.exec(xml))){
+    const row = [];
+    const cellRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g; let cm;
+    while ((cm = cellRe.exec(rm[1]))){
+      const attrs = cm[1], inner = cm[2] || '';
+      const ref = /\br="([A-Z]+\d+)"/i.exec(attrs); if (!ref) continue;
+      const type = (/\bt="([^"]+)"/.exec(attrs) || [])[1];
+      const v = /<v\b[^>]*>([\s\S]*?)<\/v>/.exec(inner);
+      let val = '';
+      if (type === 's') val = v ? (shared[+v[1]] || '') : '';
+      else if (type === 'inlineStr') val = textsOf(inner);
+      else if (v) val = xmlDecode(v[1]);
+      row[colIndex(ref[1])] = val;
+    }
+    rows.push(Array.from(row, c => c == null ? '' : c));
+  }
+  return rows;
+}
+function parseCSV(text){
+  const rows = []; let row = [], cell = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i + 1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',' || c === ';' || c === '\t'){ row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r'){ if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+function mapRows(rows){
+  rows = rows.filter(r => r.some(c => String(c == null ? '' : c).trim() !== ''));
+  if (rows.length < 2) throw new Error('The file has no data rows');
+  const norm = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const h = rows[0].map(norm);
+  const iSo = h.findIndex(x => x === 'so' || x === 'sono' || x === 'sonumber' || x === 'sonum' || x.startsWith('salesorder'));
+  const iInv = h.findIndex(x => x.includes('invoice') || x === 'invno' || x === 'inv');
+  const iCus = h.findIndex(x => x.includes('customer') || x.includes('party') || x.includes('client'));
+  const iLay = h.findIndex(x => x.includes('layer'));
+  const iBox = h.findIndex(x => (x.includes('box') || x.includes('carton')) && !x.includes('layer'));
+  if (iCus < 0) throw new Error('No "Customer Name" column found in the first row');
+  if (iSo < 0 && iInv < 0) throw new Error('No "S/O No" or "Invoice No" column found in the first row');
+  const t = v => String(v == null ? '' : v).trim();
+  const map = new Map();
+  for (const r of rows.slice(1)){
+    const o = { so: iSo >= 0 ? t(r[iSo]) : '', invoice: iInv >= 0 ? t(r[iInv]) : '', customer: t(r[iCus]), boxes: iBox >= 0 ? (parseInt(t(r[iBox]), 10) || 0) : 0, layers: iLay >= 0 ? (parseInt(t(r[iLay]), 10) || 0) : 0 };
+    if (!o.customer || (!o.so && !o.invoice)) continue;
+    const k = [o.so, o.invoice, o.customer].join('|');
+    const old = map.get(k);
+    if (!old) map.set(k, o);
+    else { old.boxes = Math.max(old.boxes, o.boxes); old.layers = Math.max(old.layers, o.layers); }
+  }
+  const orders = Array.from(map.values());
+  if (!orders.length) throw new Error('No usable rows found');
+  return { orders, hasBoxes: iBox >= 0 };
+}
+function csvCell(v){ v = String(v == null ? '' : v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+// ============================== /CORE ==============================
+
+// ------------------------------ storage (IndexedDB) ------------------------------
+let dbPromise;
+function openDb(){
+  return dbPromise || (dbPromise = new Promise((res, rej) => {
+    const r = indexedDB.open('packphoto', 1);
+    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('photos'); d.createObjectStore('boxes'); d.createObjectStore('meta'); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+}
+async function tx(store, mode, fn){
+  const d = await openDb();
+  return new Promise((res, rej) => {
+    const t = d.transaction(store, mode);
+    const req = fn(t.objectStore(store));
+    t.oncomplete = () => res(req ? req.result : undefined);
+    t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+}
+const dbPut = (s, k, v) => tx(s, 'readwrite', o => o.put(v, k));
+const dbGet = (s, k) => tx(s, 'readonly', o => o.get(k));
+const dbDel = (s, k) => tx(s, 'readwrite', o => o.delete(k));
+const dbAll = s => tx(s, 'readonly', o => o.getAll());
+
+// ------------------------------ state ------------------------------
+const bkey = (ref, cust, box) => [ref, cust, box].join('|');
+const pkey = (ref, cust, box, layer) => [ref, cust, box, layer].join('|');
+const state = {
+  tab: 'pack', logCache: {}, logSig: {}, known: {}, gcid: '', remote: [], users: [], user: null, act: null, written: {}, saved: {}, done: {}, showDone: false, orders: [], settings: { worker: '', stamp: true, subfolder: false },
+  mode: 'so', selSo: '', selInv: '', selCust: '', ref: '', customer: '', boxIn: '', layersIn: '', dateIn: '', yearIn: '',
+  viewDate: '', viewUrls: {}, viewStale: true, viewLoading: false,
+  boxes: {}, counts: {}, active: null, target: null, busy: false,
+  confirm: '', zips: {}, msg: '', fatal: ''
+};
+let toastTimer;
+function showToast(){ const t = $id('toast'); if (t){ t.textContent = state.msg; t.hidden = !state.msg; } }
+function toast(m){ state.msg = m; showToast(); clearTimeout(toastTimer); toastTimer = setTimeout(() => { state.msg = ''; showToast(); }, 3500); }
+const $id = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+async function refreshStore(){
+  const boxes = await dbAll('boxes'), photos = await dbAll('photos');
+  state.boxes = {}; state.counts = {};
+  for (const b of boxes) state.boxes[bkey(b.ref, b.customer, b.box)] = b;
+  for (const p of photos){ const k = bkey(p.ref, p.customer, p.box); state.counts[k] = (state.counts[k] || 0) + 1; }
+}
+function refMap(){
+  const m = new Map();
+  for (const o of state.orders){
+    const ref = o[state.mode]; if (!ref) continue;
+    if (!m.has(ref)) m.set(ref, new Map());
+    const c = m.get(ref), old = c.get(o.customer) || { boxes: 0, layers: 0 };
+    c.set(o.customer, { boxes: Math.max(old.boxes, o.boxes || 0), layers: Math.max(old.layers, o.layers || 0) });
+  }
+  return m;
+}
+function todayIso(){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+// Boxes made by an earlier version have no date: fall back to the day they were started.
+function folderRef(ref, customer){
+  const r = state.orders.find(o => (o.so === ref || o.invoice === ref) && o.customer === customer);
+  return (r && r.invoice) || ref;
+}
+function boxMeta(b){
+  let date = b.date;
+  if (!date){ const d = new Date(b.started || Date.now()), p = n => String(n).padStart(2, '0'); date = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  return { date, year: b.year || date.slice(0, 4) };
+}
+function custInfo(){ return ((refMap().get(state.ref) || new Map()).get(state.customer)) || { boxes: 0, layers: 0 }; }
+// Date and year default to the ones already used for this order, otherwise today.
+function seedDate(){
+  const ex = Object.values(state.boxes).filter(b => b.ref === state.ref && b.customer === state.customer).sort((a, b) => (b.started || 0) - (a.started || 0))[0];
+  const m = ex ? boxMeta(ex) : { date: todayIso(), year: todayIso().slice(0, 4) };
+  state.dateIn = m.date; state.yearIn = m.year;
+}
+
+// ---- order selection (drop-downs filled from Excel) ----
+function natCmp(a, b){ return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' }); }
+// A shipment is "saved" once all its boxes are complete and its photos are verified in the folder.
+// It stays hidden from the lists until the Excel changes (new boxes added) or you tick "Show saved orders".
+const rowKey = o => (o.invoice || o.so) + '|' + o.customer;
+const isDone = o => { const d = state.done[rowKey(o)]; return !!d && d.boxes === (o.boxes || 0); };
+function savedCount(){ return state.orders.filter(isDone).length; }
+async function markDone(ref, r){
+  if (r.bad.length) return [];
+  const marked = [];
+  for (const c of new Set(Object.values(state.boxes).filter(b => b.ref === ref).map(b => b.customer))){
+    const row = state.orders.find(o => (o.so === ref || o.invoice === ref) && o.customer === c);
+    if (!row || !(row.boxes > 0)) continue;
+    if (doneBoxSet(ref, c).size >= row.boxes){ state.done[rowKey(row)] = { boxes: row.boxes, at: Date.now() }; marked.push(c); }
+  }
+  if (marked.length) await dbPut('meta', 'done', state.done).catch(() => {});
+  return marked;
+}
+async function finishIfReady(ref){
+  try {
+    if (!state.dir || state.settings.autosave === false || !await dirReady(false)) return;
+    const r = await exclusive(() => writeRef(ref)), m = await markDone(ref, r);
+    if (m.length){
+      if (!state.showDone && m.includes(state.selCust)) resetSel();
+      toast(m.join(', ') + ' · ' + ref + ' fully saved. Removed from the order list.');
+    }
+    render();
+  } catch (e){}
+}
+function rowsFor(skip){
+  return state.orders.filter(o => (state.showDone || !isDone(o)) &&
+    (skip === 'so' || !state.selSo || o.so === state.selSo) &&
+    (skip === 'invoice' || !state.selInv || o.invoice === state.selInv) &&
+    (skip === 'customer' || !state.selCust || o.customer === state.selCust));
+}
+function optionsFor(field){
+  const s = new Set();
+  for (const o of rowsFor(field)) if (o[field]) s.add(o[field]);
+  return Array.from(s).sort(natCmp);
+}
+function resetSel(){
+  state.selSo = ''; state.selInv = ''; state.selCust = ''; state.ref = ''; state.customer = '';
+  state.boxIn = ''; state.layersIn = ''; state.dateIn = ''; state.yearIn = '';
+}
+// Auto-fill any drop-down that has only one possible value, then work out the folder reference.
+function syncSel(){
+  const rows = rowsFor('');
+  const only = f => { const s = new Set(rows.map(o => o[f]).filter(Boolean)); return s.size === 1 ? Array.from(s)[0] : ''; };
+  if (rows.length){
+    if (!state.selSo) state.selSo = only('so');
+    if (!state.selInv) state.selInv = only('invoice');
+    if (!state.selCust) state.selCust = only('customer');
+  }
+  if (state.selSo && !state.selInv) state.mode = 'so';
+  else if (!state.selSo && state.selInv) state.mode = 'invoice';
+  const ref = (state.mode === 'so' ? state.selSo : state.selInv) || '';
+  if (ref !== state.ref || state.selCust !== state.customer){
+    state.ref = ref; state.customer = state.selCust; state.boxIn = ''; state.layersIn = '';
+    if (state.ref && state.customer) seedDate(); else { state.dateIn = ''; state.yearIn = ''; }
+  }
+}
+function changeSel(field, value){
+  state[field] = value;
+  if (field === 'selSo' && value) state.mode = 'so';
+  if (field === 'selInv' && value) state.mode = 'invoice';
+  if (!rowsFor('').length){ // the other choices no longer fit: keep only the one just changed
+    for (const f of ['selSo', 'selInv', 'selCust']) if (f !== field) state[f] = '';
+  }
+  syncSel();
+}
+function myBoxes(){
+  return Object.values(state.boxes).filter(b => b.ref === state.ref && b.customer === state.customer).sort((a, b) => a.box - b.box);
+}
+// The box a packer most likely wants next: the one still in progress, otherwise the next new number.
+function suggestedBox(){
+  const mine = myBoxes(), total = custInfo().boxes;
+  const open = mine.find(b => !b.complete);
+  const used = mine.map(b => b.box).concat(remoteFor(state.ref, state.customer).map(e => e.box));
+  const n = open ? open.box : (used.length ? Math.max.apply(null, used) + 1 : 1);
+  return total && n > total ? 0 : n;
+}
+function isoOf(ts){
+  const d = new Date(ts || Date.now()), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function totalFor(ref, cust){
+  let t = 0;
+  for (const o of state.orders) if ((o.so === ref || o.invoice === ref) && o.customer === cust) t = Math.max(t, o.boxes || 0);
+  return t;
+}
+function recentOrders(){
+  const g = new Map(), rowOf = x => state.orders.find(r => (r.so === x.ref || r.invoice === x.ref) && r.customer === x.customer);
+  for (const b of Object.values(state.boxes)){
+    const k = b.ref + '\u0001' + b.customer;
+    if (!g.has(k)) g.set(k, { ref: b.ref, customer: b.customer, done: 0, inprog: 0, last: 0 });
+    const x = g.get(k); if (!b.complete) x.inprog++;
+    x.last = Math.max(x.last, b.finished || b.started || 0);
+  }
+  const have = new Set(Array.from(g.values()).map(x => { const r = rowOf(x); return r ? rowKey(r) : ''; }));
+  for (const e of state.remote){                      // orders other phones are working on
+    const row = state.orders.find(o => sameText(o.customer, e.customer) && (sameText(o.invoice, e.ref) || sameText(o.so, e.ref)));
+    if (!row || have.has(rowKey(row))) continue;
+    have.add(rowKey(row)); g.set(rowKey(row), { ref: row.invoice || row.so, customer: row.customer, done: 0, inprog: 0, last: 1 });
+  }
+  for (const x of g.values()){
+    x.done = doneBoxSet(x.ref, x.customer).size;      // boxes finished on this phone or any other
+    x.inprog += remoteFor(x.ref, x.customer).filter(e => !e.complete && !Object.values(state.boxes).some(b => b.ref === x.ref && b.customer === x.customer && b.box === e.box)).length;
+  }
+  const hide = x => { const o = rowOf(x); return !state.showDone && o && isDone(o); };
+  return Array.from(g.values()).filter(x => !hide(x)).sort((a, b) => b.last - a.last).slice(0, 8).map(x => Object.assign(x, { total: totalFor(x.ref, x.customer) }));
+}
+function resumeOrder(ref, cust){
+  const o = state.orders.find(r => (r.so === ref || r.invoice === ref) && r.customer === cust);
+  if (!o) return false;
+  state.selSo = o.so; state.selInv = o.invoice; state.selCust = o.customer;
+  state.mode = o.so === ref ? 'so' : 'invoice';
+  state.ref = ''; state.customer = '';
+  syncSel();
+  return true;
+}
+function prefillBox(n){
+  if (!n) return;
+  state.boxIn = String(n);
+  const ex = state.boxes[bkey(state.ref, state.customer, n)];
+  if (ex){ state.layersIn = String(ex.layers); const m = boxMeta(ex); state.dateIn = m.date; state.yearIn = m.year; }
+}
+
+// ------------------------------ views ------------------------------
+function selectHtml(id, label, field, selected){
+  let h = '<label class="lbl" for="' + id + '">' + label + '</label><select id="' + id + '"><option value="">Select ' + label + '</option>';
+  for (const v of optionsFor(field)) h += '<option value="' + esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + esc(v) + '</option>';
+  return h + '</select>';
+}
+function continueCard(){
+  const list = recentOrders();
+  if (!list.length) return '';
+  let h = '<section class="card"><p class="step">Continue an earlier order</p><div class="list">';
+  for (const x of list){
+    const parts = [x.total ? x.done + ' of ' + x.total + ' boxes done' : x.done + ' box' + (x.done === 1 ? '' : 'es') + ' done'];
+    if (x.inprog) parts.push(x.inprog + ' in progress');
+    h += '<button data-act="resume" data-ref="' + esc(x.ref) + '" data-cust="' + esc(x.customer) + '"><b>' + esc(x.ref) + '</b><span>' + esc(x.customer) + ' · ' + esc(parts.join(' · ')) + ' · last ' + esc(fmtDate(isoOf(x.last))) + '</span></button>';
+  }
+  return h + '</div></section>';
+}
+function viewPack(){
+  if (!state.orders.length){
+    return '<section class="card"><h2>Load your shipment list first</h2><p class="muted">Import the Excel file with S/O No, Invoice No and Customer Name columns.</p>' +
+      '<div class="row"><button class="btn" data-act="tab" data-tab="data">Import Excel</button><button class="btn ghost" data-act="sample">Try sample data</button></div></section>';
+  }
+  const hasSo = state.orders.some(o => o.so), hasInv = state.orders.some(o => o.invoice);
+  const anySel = state.selSo || state.selInv || state.selCust;
+  let h = '<section class="card"><div class="row between"><p class="step" style="margin:0">1 · Order</p>' + (anySel ? '<button class="btn ghost small" data-act="clearsel">Clear</button>' : '') + '</div>';
+  if (hasSo) h += selectHtml('selSo', 'S/O No', 'so', state.selSo);
+  if (hasInv) h += selectHtml('selInv', 'Invoice No', 'invoice', state.selInv);
+  h += selectHtml('selCust', 'Customer Name', 'customer', state.selCust);
+  if (state.selSo && state.selInv){
+    h += '<p class="lbl">Folder name uses</p><div class="seg" style="margin:0"><button data-act="mode" data-mode="so" class="' + (state.mode === 'so' ? 'on' : '') + '">S/O No</button><button data-act="mode" data-mode="invoice" class="' + (state.mode === 'invoice' ? 'on' : '') + '">Invoice No</button></div>';
+  }
+  const nd = savedCount();
+  if (nd) h += '<label class="row" style="margin-top:12px"><input type="checkbox" id="showdone"' + (state.showDone ? ' checked' : '') + ' style="width:22px;height:22px"> Show ' + nd + ' saved order' + (nd > 1 ? 's' : '') + ' (hidden)</label>';
+  h += '</section>';
+  if (!(state.ref && state.customer)) return h + continueCard();
+
+  const info = custInfo(), total = info.boxes, mine = myBoxes();
+  const k = bkey(state.ref, state.customer, parseInt(state.boxIn, 10) || 0), ex = state.boxes[k], locked = ex && (state.counts[k] || 0) > 0;
+  const shownDate = locked ? boxMeta(ex).date : state.dateIn, shownYear = locked ? boxMeta(ex).year : state.yearIn;
+  h += '<section class="card"><p class="step">2 · Date and year</p><div class="row" style="flex-wrap:nowrap"><input type="date" id="datein" value="' + esc(shownDate) + '"' + (locked ? ' disabled' : '') + ' style="flex:2;min-width:0">' +
+    '<input type="number" id="yearin" inputmode="numeric" min="2000" max="2100" value="' + esc(shownYear) + '"' + (locked ? ' disabled' : '') + ' style="flex:1;min-width:0" aria-label="Year"></div>';
+  const dates = new Set(mine.map(b => boxMeta(b).date)); dates.add(todayIso());
+  if (!locked && dates.size > 1){
+    h += '<p class="muted" style="margin:8px 0 0">This order already has a folder from an earlier day. Continue in it or start a folder for today.</p><div class="chips">';
+    for (const dt of Array.from(dates).sort().reverse()) h += '<button class="chip ' + (dt === shownDate ? 'done' : '') + '" data-act="setdate" data-date="' + dt + '">' + (dt === todayIso() ? 'Today · ' : 'Earlier folder · ') + esc(fmtDate(dt)) + '</button>';
+    h += '</div>';
+  } else h += '<p class="muted" style="margin:8px 0 0">The year folder follows the date. You can change it.</p>';
+  h += '</section>';
+
+  h += '<section class="card"><p class="step">3 · Box No' + (total ? ' (shipment has ' + total + ')' : '') + '</p>';
+  h += '<input type="number" id="boxin" inputmode="numeric" min="1" placeholder="Enter box number" value="' + esc(state.boxIn) + '">';
+  const sug = suggestedBox();
+  const rem = remoteFor(state.ref, state.customer).filter(e => !mine.some(b => b.box === e.box)).sort((a, z) => a.box - z.box);
+  if (state.dir && !state.loadingShared && Date.now() - (state.remoteTry || 0) > 30000) setTimeout(() => loadShared(true), 0);
+  if (mine.length || sug || rem.length){
+    h += '<div class="chips">';
+    for (const b of mine){
+      const n = state.counts[bkey(b.ref, b.customer, b.box)] || 0;
+      h += '<button class="chip ' + (b.complete ? 'done' : 'part') + '" data-act="pickbox" data-box="' + b.box + '">Box ' + b.box + ' · ' + (b.complete ? 'done' : n + '/' + b.layers) + '</button>';
+    }
+    for (const e of rem) h += '<button class="chip ' + (e.complete ? 'done' : 'part') + '" data-act="pickbox" data-box="' + e.box + '">Box ' + e.box + ' · ' + (e.complete ? 'done' : e.photos + '/' + (e.layers || '?')) + ' · ' + esc(whoText(e)) + '</button>';
+    if (sug && !mine.some(b => b.box === sug) && !rem.some(b => b.box === sug)) h += '<button class="chip" data-act="pickbox" data-box="' + sug + '">+ Next box ' + sug + '</button>';
+    h += '</div>';
+  }
+  h += '</section>';
+  const layersShown = locked ? ex.layers : (state.layersIn || (info.layers ? String(info.layers) : ''));
+  h += '<section class="card"><p class="step">4 · Layers in this box</p>';
+  h += '<input type="number" id="layersin" inputmode="numeric" min="1" max="99" placeholder="Enter number of layers" value="' + esc(layersShown) + '"' + (locked ? ' disabled' : '') + '>';
+  if (locked) h += '<p class="muted" style="margin-top:8px">Locked: photos already taken for this box.</p>';
+  else h += '<p class="muted" style="margin-top:8px">' + (info.layers && !state.layersIn ? 'Filled in from your Excel file. You can change it. ' : '') + 'One photo is required for each layer, no more and no less.</p>';
+  h += '</section>';
+  const pv = photoPath({ customer: state.customer, year: shownYear || 'YYYY', date: shownDate, ref: folderRef(state.ref, state.customer), box: parseInt(state.boxIn, 10) || 'n', layer: 1, subfolder: state.settings.subfolder });
+  h += '<section class="card"><p class="step">Folder preview</p><div class="scroll"><code style="font-size:.82rem;white-space:pre">' + esc(pv.split('/').join(' /\n')) + '</code></div></section>';
+  h += '<button class="btn big" data-act="start">' + (ex ? 'Continue box' : 'Start box') + '</button>';
+  return h;
+}
+// Folder preview for one day: Customer / Year / Date_Customer_Order / boxes, with thumbnails of each layer.
+// ---- reset and clean-up (administrator only) ----
+function dangerCard(){
+  let h = '<section class="card"><h2>Reset and clean-up</h2><p class="muted">Each action asks you to type a word and enter your administrator password.</p>';
+  if (state.dir) h += '<button class="btn danger" style="margin-bottom:8px;width:100%" data-act="delappfolders">Delete folders created by this app</button><p class="muted" style="margin:0 0 12px">Removes the customer / year / order folders and the log inside ' + esc(state.dir.name) + '. Other files stay.</p><button class="btn danger" style="margin-bottom:8px;width:100%" data-act="emptydir">Empty the selected folder</button><p class="muted" style="margin:0 0 12px">Deletes everything inside ' + esc(state.dir.name) + '. The folder itself stays. Google Drive items go to the Drive trash.</p>';
+  return h + '<button class="btn danger" style="width:100%" data-act="factory">Factory reset this app</button><p class="muted" style="margin:6px 0 0">Erases photos, shipments, users and settings on this phone. Files already in the folder stay. The device stays activated.</p></section>';
+}
+async function confirmAdmin(word, msg){
+  if (!state.user || state.user.role !== 'admin') return false;
+  if (!confirm(msg + '\n\nThis cannot be undone.')) return false;
+  if ((prompt('Type ' + word + ' to confirm') || '').trim() !== word){ toast('Cancelled.'); return false; }
+  const p = prompt('Enter your administrator password'); if (p == null) return false;
+  if (await hashPw(p, state.user.salt) !== state.user.hash){ toast('Wrong password.'); return false; }
+  return true;
+}
+async function removeNames(parent, names){      // repeats, so folders that share a name are all removed
+  let n = 0;
+  for (let round = 0; round < 6; round++){
+    const hit = [];
+    for await (const [nm] of fresh(parent).entries()) if (names(nm)) hit.push(nm);
+    if (!hit.length) break;
+    for (const nm of hit){ try { await parent.removeEntry(nm, { recursive: true }); n++; } catch (e){} }
+  }
+  return n;
+}
+async function isAppCustomerDir(h){
+  for await (const [yn, yh] of fresh(h).entries()) if (yh.kind === 'directory' && /^\d{4}$/.test(yn)) return true;
+  return false;
+}
+async function wipeFolder(all){
+  if (!state.dir) return;
+  const name = state.dir.name;
+  if (!await confirmAdmin(all ? 'EMPTY' : 'DELETE', all ? 'Delete EVERYTHING inside "' + name + '"? Other phones lose it too. Photos still on this phone are not deleted.' : 'Delete the customer, year and order folders and the log created by this app inside "' + name + '"? Other phones lose them too.')) return;
+  try {
+    if (!await dirReady(true)) throw new Error('Folder access was not allowed');
+    state.busy = true; render();
+    const n = await exclusive(async () => {
+      let pick;
+      if (all) pick = () => true;
+      else {
+        const keep = new Set();
+        for await (const [nm, h] of fresh(state.dir).entries()) if (h.kind === 'directory' && (nm.toLowerCase() === 'logs' || await isAppCustomerDir(h))) keep.add(nm);
+        pick = nm => keep.has(nm);
+      }
+      return removeNames(state.dir, pick);
+    });
+    state.known = {}; saveKnown(); dirCache.clear(); state.written = {}; saveWritten(); state.saved = {}; state.remote = []; state.logCache = {}; state.done = {};
+    await dbPut('meta', 'done', {}); await dbPut('meta', 'remote', []); await dbPut('meta', 'logcache', {}).catch(() => {});
+    toast(n + ' item' + (n === 1 ? '' : 's') + ' deleted from ' + name + '.');
+  } catch (e){ toast('Delete stopped: ' + e.message); }
+  state.busy = false; render();
+}
+async function factoryReset(){
+  if (!await confirmAdmin('RESET', 'Erase ALL photos, shipments, users and settings on this phone? Photos not yet saved to the folder are lost. Files already in the folder stay.')) return;
+  try {
+    const act = await dbGet('meta', 'act').catch(() => null), dev = state.dev, db = await openDb();
+    await new Promise((res, rej) => { const names = Array.from(db.objectStoreNames), t = db.transaction(names, 'readwrite'); names.forEach(n => t.objectStore(n).clear()); t.oncomplete = res; t.onerror = () => rej(t.error); });
+    await dbPut('meta', 'dev', dev); if (act) await dbPut('meta', 'act', act);
+    try { localStorage.clear(); localStorage.setItem('ppl_dev', dev); sessionStorage.clear(); } catch (e){}
+    location.reload();
+  } catch (e){ toast('Reset failed: ' + e.message); }
+}
+// ---- device activation + user login ----
+const PUB = {"key_ops":["verify"],"ext":true,"kty":"EC","x":"VmChWsGNDD1xUW5Ljo3tHZRMS9q0QxQ_TtkWhgzGoFI","y":"IXhGmxWPjNOekU_etoJsql71q_g306vO_psZuRmUg7Q","crv":"P-256"};
+const b64u = b => btoa(String.fromCharCode.apply(null, new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+async function verifyCode(code){
+  const [p, sg] = String(code).replace(/\s+/g, '').split('.');
+  const key = await crypto.subtle.importKey('jwk', PUB, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+  if (!p || !sg || !await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, unb64u(sg), unb64u(p))) throw new Error('This code is not valid.');
+  const d = JSON.parse(new TextDecoder().decode(unb64u(p)));
+  if (d.d !== state.dev) throw new Error('This code was made for a different device.');
+  return d;
+}
+async function hashPw(pw, salt){
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  return b64u(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: unb64u(salt), iterations: 150000 }, k, 256));
+}
+async function mkUser(name, pw, role){
+  const salt = b64u(crypto.getRandomValues(new Uint8Array(16)));
+  return { id: b64u(crypto.getRandomValues(new Uint8Array(6))), name, role, salt, hash: await hashPw(pw, salt), off: false };
+}
+const saveUsers = () => dbPut('meta', 'users', state.users);
+const val = id => ($id(id) ? $id(id).value : '');
+function actOk(){ return state.act && (!state.act.e || todayIso() <= state.act.e); }
+function setUser(u){
+  state.user = u; state.settings.worker = u ? u.name : '';
+  if (u) dbPut('meta', 'session', { uid: u.id, until: Date.now() + 12 * 3600e3 }); else dbDel('meta', 'session').catch(() => {});
+}
+function viewAuth(){
+  const m = state.authMsg ? '<div class="notice" style="margin-bottom:10px">' + esc(state.authMsg) + '</div>' : '';
+  let h = '<section class="card"><h2>Pack Photo Log</h2>' + m;
+  if (!actOk()){
+    h += '<p class="step">Activate this device</p><p class="muted">' + (state.act ? 'Your activation has expired. ' : '') + 'Send this Device ID to your administrator and paste the activation code you get back.</p>' +
+      '<div style="font:700 22px monospace;letter-spacing:1px;text-align:center;padding:12px;background:#eef2ef;border-radius:10px;margin:10px 0">' + esc(state.dev) + '</div>' +
+      '<button class="btn ghost small" data-act="copyid">Copy Device ID</button><textarea id="actcode" rows="4" placeholder="Paste activation code" style="width:100%;margin:10px 0"></textarea><button class="btn big" data-act="activate">Activate</button>';
+  } else if (!state.users.length){
+    h += '<p class="step">Create the administrator</p><p class="muted">Activated for ' + esc(state.act.c || 'this company') + '. This first user manages other users.</p>' +
+      '<input id="nu" placeholder="Administrator name" autocomplete="off"><input id="np" type="password" placeholder="Password (min 6)" style="margin-top:8px"><input id="np2" type="password" placeholder="Repeat password" style="margin-top:8px"><button class="btn big" style="margin-top:10px" data-act="mkadmin">Create and sign in</button>';
+  } else if (state.resetMode){
+    h += '<p class="step">Administrator reset</p><p class="muted">Send this Device ID to the activation administrator and paste the reset code.</p><div style="font:700 18px monospace;text-align:center;margin:8px 0">' + esc(state.dev) + '</div>' +
+      '<textarea id="rstcode" rows="3" placeholder="Paste reset code" style="width:100%"></textarea><input id="np" type="password" placeholder="New administrator password" style="margin-top:8px"><button class="btn big" style="margin-top:10px" data-act="doreset">Reset password</button><button class="btn ghost small" style="margin-top:8px" data-act="resetmode">Back</button>';
+  } else {
+    h += '<p class="step">Sign in</p><label class="lbl" for="lu">User</label><select id="lu">' + state.users.filter(u => !u.off).map(u => '<option value="' + esc(u.id) + '">' + esc(u.name) + '</option>').join('') + '</select>' +
+      '<label class="lbl" for="lp">Password</label><input id="lp" type="password" autocomplete="current-password"><button class="btn big" style="margin-top:12px" data-act="login">Sign in</button><button class="btn ghost small" style="margin-top:8px" data-act="resetmode">Forgot administrator password?</button>';
+  }
+  return h + '</section>';
+}
+const APP_VERSION = 'v24 · one-log';
+function accountCard(){
+  return '<section class="card"><h2>Account</h2><p class="muted">Signed in as <b>' + esc(state.user.name) + '</b> (' + state.user.role + ')<br>App ' + APP_VERSION + '<br>Device ' + esc(state.dev) + (state.act && state.act.e ? ' · valid until ' + esc(state.act.e) : '') + '</p>' +
+    '<label class="lbl" for="phonename">Phone name (shown to the other phones)</label><input id="phonename" value="' + esc(phoneName()) + '" autocomplete="off" style="margin-bottom:10px"><div class="row"><button class="btn ghost" data-act="chpw">Change my password</button><button class="btn" data-act="logout">Sign out</button></div></section>';
+}
+function usersCard(){
+  let h = '<section class="card"><h2>Users</h2>';
+  for (const u of state.users){
+    h += '<div class="row between" style="margin-bottom:8px"><span' + (u.off ? ' class="muted"' : '') + '><b>' + esc(u.name) + '</b> · ' + u.role + (u.off ? ' · disabled' : '') + '</span><span class="row"><button class="btn ghost small" data-act="uspw" data-id="' + u.id + '">Password</button><button class="btn ghost small" data-act="usoff" data-id="' + u.id + '">' + (u.off ? 'Enable' : 'Disable') + '</button><button class="btn danger small" data-act="usdel" data-id="' + u.id + '">Delete</button></span></div>';
+  }
+  return h + '<p class="step" style="margin-top:14px">Add user</p><input id="nu" placeholder="Name" autocomplete="off"><input id="np" type="password" placeholder="Password (min 6)" style="margin-top:8px"><select id="nr" style="margin-top:8px"><option value="packer">Packer</option><option value="admin">Administrator</option></select><button class="btn" style="margin-top:10px" data-act="adduser">Add user</button></section>';
+}
+const admins = () => state.users.filter(u => u.role === 'admin' && !u.off);
+async function authAct(a, d){
+  state.authMsg = '';
+  try {
+    if (!crypto.subtle) throw new Error('This browser cannot run secure login. Open the app in Chrome.');
+    if (a === 'activate'){
+      const r = await verifyCode(val('actcode')); if (r.t !== 'act') throw new Error('This is not an activation code.');
+      if (r.e && todayIso() > r.e) throw new Error('This code has already expired.');
+      state.act = r; await dbPut('meta', 'act', val('actcode').replace(/\s+/g, ''));
+    } else if (a === 'mkadmin'){
+      const n = val('nu').trim(), p = val('np'); if (!n) throw new Error('Enter a name.'); if (p.length < 6) throw new Error('Password needs at least 6 characters.'); if (p !== val('np2')) throw new Error('Passwords do not match.');
+      const u = await mkUser(n, p, 'admin'); state.users = [u]; await saveUsers(); setUser(u);
+    } else if (a === 'login'){
+      if (state.lockUntil > Date.now()) throw new Error('Too many wrong passwords. Wait ' + Math.ceil((state.lockUntil - Date.now()) / 1000) + ' seconds.');
+      const u = state.users.find(x => x.id === val('lu'));
+      if (!u || await hashPw(val('lp'), u.salt) !== u.hash){ state.fails = (state.fails || 0) + 1; if (state.fails >= 5){ state.lockUntil = Date.now() + 30000; state.fails = 0; } throw new Error('Wrong password.'); }
+      state.fails = 0; setUser(u); await restoreBox();
+    } else if (a === 'doreset'){
+      const r = await verifyCode(val('rstcode')); if (r.t !== 'rst') throw new Error('This is not a reset code.');
+      const used = (await dbGet('meta', 'usedreset').catch(() => null)) || []; if (used.includes(r.n)) throw new Error('This reset code was already used.');
+      if (val('np').length < 6) throw new Error('Password needs at least 6 characters.');
+      const adm = state.users.find(u => u.role === 'admin'); const nu = await mkUser(adm.name, val('np'), 'admin'); nu.id = adm.id;
+      state.users = state.users.map(u => u.id === adm.id ? nu : u); await saveUsers(); await dbPut('meta', 'usedreset', used.concat(r.n)); state.resetMode = false; setUser(nu);
+    }
+  } catch (e){ state.authMsg = e.message; }
+  render();
+}
+async function userAct(a, d){
+  try {
+    const u = state.users.find(x => x.id === d.id);
+    if (a === 'adduser'){
+      const n = val('nu').trim(), p = val('np'); if (!n || p.length < 6) return toast('Enter a name and a password of 6+ characters.');
+      if (state.users.some(x => x.name.toLowerCase() === n.toLowerCase())) return toast('That name already exists.');
+      state.users.push(await mkUser(n, p, val('nr'))); toast(n + ' added.');
+    } else if (a === 'uspw'){
+      const p = prompt('New password for ' + u.name + ' (min 6 characters)'); if (!p) return; if (p.length < 6) return toast('Password too short.');
+      const nu = await mkUser(u.name, p, u.role); u.salt = nu.salt; u.hash = nu.hash; toast('Password changed.');
+    } else if (a === 'usoff'){
+      if (!u.off && u.role === 'admin' && admins().length < 2) return toast('Keep at least one active administrator.');
+      if (u.id === state.user.id) return toast('You cannot disable yourself.'); u.off = !u.off;
+    } else if (a === 'usdel'){
+      if (u.id === state.user.id) return toast('You cannot delete yourself.');
+      if (u.role === 'admin' && !u.off && admins().length < 2) return toast('Keep at least one active administrator.');
+      if (!confirm('Delete user ' + u.name + '?')) return; state.users = state.users.filter(x => x.id !== u.id);
+    } else if (a === 'chpw'){
+      const o = prompt('Current password'); if (o == null) return; if (await hashPw(o, state.user.salt) !== state.user.hash) return toast('Wrong password.');
+      const p = prompt('New password (min 6 characters)'); if (!p || p.length < 6) return toast('Password too short.');
+      const nu = await mkUser(state.user.name, p, state.user.role); state.user.salt = nu.salt; state.user.hash = nu.hash; toast('Password changed.');
+    }
+    await saveUsers();
+  } catch (e){ toast(e.message); }
+  render();
+}
+// ---- in-app viewer for the save folder ----
+const IMG_RE = /\.(jpe?g|png|webp)$/i;
+function revokeBrowse(){ if (state.browse) for (const it of state.browse.items) if (it.url) URL.revokeObjectURL(it.url); }
+function pathFor(ref){
+  const b = Object.values(state.boxes).find(x => x.ref === ref); if (!b) return [];
+  const m = boxMeta(b);
+  return photoPath({ customer: b.customer, year: m.year, date: m.date, ref: folderRef(ref, b.customer), box: b.box, layer: 1, subfolder: false }).split('/').slice(0, -1);
+}
+async function loadBrowse(parts){
+  const items = [];
+  try {
+    const d = await getDir(parts, false), raw = [];
+    for await (const [n, h] of d.entries()) raw.push([n, h]);
+    raw.sort((a, b) => (a[1].kind === b[1].kind ? 0 : a[1].kind === 'directory' ? -1 : 1) || natCmp(a[0], b[0]));
+    let th = 0;
+    for (const [n, h] of raw){
+      const it = { name: n, dir: h.kind === 'directory' };
+      if (h.drive) it.h = h;
+      else if (!it.dir && IMG_RE.test(n) && th < 60){ try { it.url = URL.createObjectURL(await h.getFile()); th++; } catch (e){} }
+      items.push(it);
+    }
+  } catch (e){ toast('That folder does not exist yet. Save the photos first.'); return; }
+  revokeBrowse(); state.browse = { parts, items }; state.viewImg = ''; render(); window.scrollTo(0, 0);
+}
+function viewBrowse(){
+  const b = state.browse, row = 'display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left;width:100%;margin-bottom:8px';
+  let h = '<section class="card"><div class="row between"><b>Saved folder</b><button class="btn ghost small" data-act="bclose">Close</button></div><p class="muted" style="word-break:break-all;margin:8px 0">' + esc([state.dir.name].concat(b.parts).join(' / ')) + '</p>';
+  if (b.parts.length) h += '<button class="btn ghost small" data-act="bup">← Back</button>';
+  h += '</section><section class="card">';
+  if (!b.items.length) h += '<p class="muted">This folder is empty.</p>';
+  b.items.forEach((it, i) => {
+    h += '<button class="btn ghost" style="' + row + '" data-act="' + (it.dir ? 'bin' : 'bview') + '" data-i="' + i + '">' +
+      (it.url ? '<img src="' + it.url + '" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px">' : '<span style="font-size:28px;width:56px;text-align:center">' + (it.dir ? '📁' : '📄') + '</span>') +
+      '<span style="word-break:break-all">' + esc(it.name) + '</span></button>';
+  });
+  h += '</section>';
+  if (state.viewImg) h += '<div data-act="bimgclose" style="position:fixed;inset:0;background:#000;z-index:50;display:flex;align-items:center;justify-content:center"><img src="' + state.viewImg + '" alt="" style="max-width:100%;max-height:100%"></div>';
+  return h;
+}
+function viewToday(){
+  const date = state.viewDate || todayIso();
+  let h = '<section class="card"><p class="step">Folder preview for day</p><div class="row" style="flex-wrap:nowrap"><input type="date" id="vdate" value="' + esc(date) + '" style="flex:1;min-width:0">' +
+    '<button class="btn ghost small" data-act="vtoday">Today</button>' + (state.dir ? '<button class="btn small" data-act="loadshared"' + (state.loadingShared ? ' disabled' : '') + '>' + (state.loadingShared ? 'Syncing…' : 'Sync') + '</button>' : '') + '</div>' + (state.dir && state.remoteAt ? '<p class="muted" style="margin:8px 0 0">Includes other phones · synced ' + new Date(state.remoteAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</p>' : '') + '</section>';
+  if (state.viewStale) return h + '<p class="muted">Loading…</p>';
+  const tree = new Map(); let nBoxes = 0, nPhotos = 0; const folders = new Set();
+  for (const b of Object.values(state.boxes)){
+    const m = boxMeta(b); if (m.date !== date) continue;
+    const c = sanitize(b.customer), y = sanitize(m.year), f = orderFolder(b.customer, folderRef(b.ref, b.customer), m.date);
+    if (!tree.has(c)) tree.set(c, new Map());
+    if (!tree.get(c).has(y)) tree.get(c).set(y, new Map());
+    if (!tree.get(c).get(y).has(f)) tree.get(c).get(y).set(f, []);
+    tree.get(c).get(y).get(f).push(b); nBoxes++; nPhotos += state.counts[bkey(b.ref, b.customer, b.box)] || 0; folders.add(c + '/' + y + '/' + f);
+  }
+  const have = new Set(Object.values(state.boxes).map(b => { const m = boxMeta(b); return [sanitize(b.customer), sanitize(m.year), orderFolder(b.customer, folderRef(b.ref, b.customer), m.date)].join('/').toLowerCase() + '|' + b.box; }));
+  for (const e of state.remote){
+    const pp = e.dir.split('/'), dm = (pp[2] || '').match(/^(\d{2})-(\d{2})-(\d{4})_/);
+    if (!dm || dm[3] + '-' + dm[2] + '-' + dm[1] !== date || have.has(e.dir.toLowerCase() + '|' + e.box)) continue;
+    if (!tree.has(pp[0])) tree.set(pp[0], new Map());
+    if (!tree.get(pp[0]).has(pp[1])) tree.get(pp[0]).set(pp[1], new Map());
+    if (!tree.get(pp[0]).get(pp[1]).has(pp[2])) tree.get(pp[0]).get(pp[1]).set(pp[2], []);
+    tree.get(pp[0]).get(pp[1]).get(pp[2]).push({ box: e.box, layers: e.layers || e.photos, complete: e.complete, remote: e }); nBoxes++; nPhotos += e.photos; folders.add(e.dir);
+  }
+  if (!nBoxes) return h + '<section class="card"><h2>Nothing saved on ' + esc(fmtDate(date)) + '</h2><p class="muted">Folders and photos for the day appear here as you pack.</p></section>';
+  h += '<p class="muted big-num" style="margin:0">' + folders.size + ' folder' + (folders.size === 1 ? '' : 's') + ' · ' + nBoxes + ' box' + (nBoxes === 1 ? '' : 'es') + ' · ' + nPhotos + ' photos</p>';
+  const sub = state.settings.subfolder;
+  for (const [c, years] of tree){
+    h += '<section class="card"><details open><summary>' + esc(c) + '</summary>';
+    for (const [y, fl] of years){
+      h += '<details open><summary>' + esc(y) + '</summary>';
+      for (const [f, boxes] of fl){
+        h += '<details open><summary>' + esc(f) + '</summary>';
+        for (const b of boxes.sort((a, z) => a.box - z.box)){
+          if (b.remote){
+            h += '<details><summary>Box ' + b.box + ' · ' + b.remote.photos + ' of ' + b.layers + ' layers · ' + (b.complete ? 'done' : 'in progress') + ' · ' + esc(whoText(b.remote)) + '</summary><p class="muted" style="margin:8px 0;overflow-wrap:anywhere">Box_' + b.box + '_Layer_1.jpg' + (b.layers > 1 ? ' … Box_' + b.box + '_Layer_' + b.layers + '.jpg' : '') + '</p><button class="btn small" data-act="openremote" data-dir="' + esc(b.remote.dir) + '">Open folder and photos</button></details>';
+            continue;
+          }
+          const n = state.counts[bkey(b.ref, b.customer, b.box)] || 0, key = bkey(b.ref, b.customer, b.box);
+          const fn = i => 'Box_' + b.box + '_Layer_' + i + (sub ? '/Box_' + b.box + '_Layer_' + i : '') + '.jpg';
+          h += '<details><summary>Box ' + b.box + ' · ' + n + ' of ' + b.layers + ' layers · ' + (b.complete ? 'done' : 'in progress') + '</summary>';
+          h += '<p class="muted" style="margin:8px 0;overflow-wrap:anywhere">' + esc(fn(1)) + (b.layers > 1 ? ' … ' + esc(fn(b.layers)) : '') + '</p><div class="grid">';
+          for (let i = 1; i <= b.layers; i++){
+            const u = state.viewUrls[pkey(b.ref, b.customer, b.box, i)];
+            h += '<div class="slot ' + (u ? 'filled' : '') + '" title="' + esc(fn(i)) + '">' + (u ? '<img alt="Layer ' + i + '" loading="lazy" src="' + u + '"><em>' + i + '</em>' : i) + '</div>';
+          }
+          h += '</div><div style="margin-top:10px"><button class="btn small ' + (b.complete ? 'ghost' : '') + '" data-act="resumebox" data-key="' + esc(key) + '">' + (b.complete ? 'Open box' : 'Continue box') + '</button></div></details>';
+        }
+        h += '</details>';
+      }
+      h += '</details>';
+    }
+    h += '</details></section>';
+  }
+  return h;
+}
+async function loadViewPhotos(){
+  state.viewLoading = true;
+  try {
+    for (const u of Object.values(state.viewUrls)) URL.revokeObjectURL(u);
+    state.viewUrls = {};
+    const date = state.viewDate || todayIso();
+    for (const p of await dbAll('photos')){
+      const b = state.boxes[bkey(p.ref, p.customer, p.box)];
+      if (b && boxMeta(b).date === date) state.viewUrls[pkey(p.ref, p.customer, p.box, p.layer)] = URL.createObjectURL(p.blob);
+    }
+  } catch (e){ /* thumbnails are optional */ }
+  state.viewStale = false; state.viewLoading = false; render();
+}
+function setTab(t){
+  if (state.browse){ revokeBrowse(); state.browse = null; }
+  state.tab = t; state.confirm = '';
+  if (t === 'today'){ state.viewStale = true; if (state.dir && Date.now() - (state.remoteAt || 0) > 60000) loadShared(true); }
+  else { for (const u of Object.values(state.viewUrls)) URL.revokeObjectURL(u); state.viewUrls = {}; }
+  render();
+}
+function viewCapture(){
+  const a = state.active, done = Object.keys(a.photos).length, t = state.target;
+  let h = '<section class="card"><div class="row between"><div style="min-width:0"><b class="big-num">' + esc(a.ref) + '</b><div class="muted" style="overflow-wrap:anywhere">' + esc(a.customer) + ' · Box ' + a.box + ' · ' + esc(fmtDate(a.date)) + '</div></div>' +
+    '<button class="btn ghost small" data-act="close">Back</button></div>';
+  h += '<div style="margin-top:12px" class="bar"><i style="width:' + (done / a.layers * 100) + '%"></i></div>';
+  h += '<p class="muted big-num" style="margin:6px 0 0">' + done + ' of ' + a.layers + ' layers photographed</p></section>';
+  if (t){
+    const cur = a.photos[t];
+    h += '<section class="card"><p class="step">' + (cur ? 'Retake' : 'Next') + ' · Layer ' + t + ' of ' + a.layers + '</p>';
+    if (cur) h += '<img class="preview" alt="Layer ' + t + ' photo" src="' + cur.url + '" style="margin-bottom:10px">';
+    h += '<button class="btn big" data-act="shoot"' + (state.busy ? ' disabled' : '') + '>' + (state.busy ? 'Saving…' : (cur ? 'Retake layer ' + t : 'Take photo · Layer ' + t)) + '</button></section>';
+  } else {
+    h += '<section class="card"><p class="step">All layers captured</p><p class="muted">Tap a layer below to retake it, or complete the box.</p></section>';
+  }
+  h += '<section class="card"><p class="step">Layers</p><div class="grid">';
+  for (let i = 1; i <= a.layers; i++){
+    const p = a.photos[i];
+    h += '<button class="slot ' + (p ? 'filled ' : '') + (i === t ? 'target' : '') + '" data-act="target" data-layer="' + i + '" aria-label="Layer ' + i + '">' + (p ? '<img alt="" src="' + p.url + '"><em>' + i + '</em>' : i) + '</button>';
+  }
+  h += '</div></section>';
+  const left = a.layers - done;
+  h += '<button class="btn big" data-act="complete"' + (left ? ' disabled' : '') + '>Complete box</button>';
+  if (left) h += '<p class="muted" style="text-align:center">' + left + ' layer' + (left > 1 ? 's' : '') + ' still need a photo.</p>';
+  h += '<button class="btn danger small" data-act="resetbox">' + (state.confirm === 'resetbox' ? 'Tap again to delete this box\'s photos' : 'Start this box over') + '</button>';
+  return h;
+}
+function viewExport(){ return sharedCard() + viewExport_(); }
+function viewExport_(){
+  const groups = new Map();
+  for (const b of Object.values(state.boxes)){
+    if (!groups.has(b.ref)) groups.set(b.ref, { boxes: 0, complete: 0, photos: 0, customers: new Set() });
+    const g = groups.get(b.ref); g.boxes++; if (b.complete) g.complete++; g.photos += state.counts[bkey(b.ref, b.customer, b.box)] || 0; g.customers.add(b.customer);
+  }
+  if (!groups.size) return '<section class="card"><h2>No shipments yet</h2><p class="muted">Photos you take appear here, ready to send to Google Drive or OneDrive.</p></section>';
+  let h = '';
+  if (state.dir && !state.checking && Array.from(groups.keys()).some(r => !state.saved[r])) setTimeout(() => checkAll(false), 0);
+  if (state.dir && groups.size > 1) h += '<button class="btn big" data-act="saveall"' + (state.busy ? ' disabled' : '') + '>' + (state.busyRef ? 'Saving…' : 'Save all shipments to ' + esc(state.dir.name)) + '</button>';
+  const canShare = !!(navigator.canShare && navigator.share);
+  for (const [ref, g] of groups){
+    const z = state.zips[ref];
+    h += '<section class="card"><div class="row between"><b class="big-num">' + esc(ref) + '</b><span class="muted">' + esc(Array.from(g.customers).join(', ')) + '</span></div>';
+    h += '<p class="muted" style="margin:6px 0 10px">' + g.complete + ' of ' + g.boxes + ' boxes complete · ' + g.photos + ' photos</p>';
+    if (g.complete < g.boxes) h += '<div class="notice" style="margin-bottom:10px">Some boxes are not finished. Their photos are still included.</div>';
+    if (state.dir){
+      const sv = state.saved[ref], full = sv && !sv.unknown && sv.total && sv.saved === sv.total;
+      let st = 'Checking…';
+      if (sv && sv.unknown) st = 'Status unknown. <a href="#" data-act="checkdir" style="color:inherit;font-weight:700">Verify in folder</a>';
+      else if (sv) st = full ? '✓ All ' + sv.total + ' photos saved' : sv.saved + ' of ' + sv.total + ' photos saved · ' + (sv.total - sv.saved) + ' not saved yet';
+      if (sv && sv.local && !sv.unknown) st += ' · <a href="#" data-act="checkdir" style="color:inherit;font-weight:700">Verify in folder</a>';
+      const lbl = state.busyRef === ref ? 'Saving…' : full ? 'All saved ✓' : sv && !sv.unknown && sv.saved ? 'Save ' + (sv.total - sv.saved) + ' missing to ' + esc(state.dir.name) : 'Save to ' + esc(state.dir.name);
+      h += '<p class="muted" style="margin:0 0 8px">' + st + '</p><button class="btn ghost small" style="margin-bottom:8px" data-act="openfolder" data-ref="' + esc(ref) + '">Open this folder</button><button class="btn ' + (full ? 'ghost ' : 'big') + '" style="margin-bottom:10px" data-act="savedir" data-ref="' + esc(ref) + '"' + (state.busy ? ' disabled' : '') + '>' + lbl + '</button>';
+    }
+    if (!z) h += '<button class="btn ' + (state.dir ? 'ghost ' : '') + '" data-act="zip" data-ref="' + esc(ref) + '"' + (state.busy ? ' disabled' : '') + '>' + (state.busyRef === ref ? 'Preparing…' : 'Prepare ZIP') + '</button>';
+    else {
+      h += '<p class="muted">ZIP ready · ' + (z.blob.size / 1048576).toFixed(1) + ' MB</p><div class="row">';
+      if (canShare) h += '<button class="btn" data-act="share" data-ref="' + esc(ref) + '">Send to Drive / OneDrive</button>';
+      h += '<button class="btn ghost" data-act="download" data-ref="' + esc(ref) + '">Download</button></div>';
+    }
+    h += '<div style="margin-top:10px"><button class="btn danger small" data-act="delref" data-ref="' + esc(ref) + '">' + (state.confirm === 'del:' + ref ? 'Tap again to delete from this phone' : 'Delete from phone') + '</button></div></section>';
+  }
+  return h;
+}
+function viewData(){
+  const isAdmin = state.user && state.user.role === 'admin';
+  let h = accountCard();
+  if (!isAdmin) return h;
+  return h + viewSetup() + usersCard() + dangerCard();
+}
+function viewSetup(){
+  const sub = state.settings.subfolder;
+  let h = '<section class="card"><h2>Shipment list</h2>';
+  h += '<p class="muted">' + (state.orders.length ? state.orders.length + ' rows loaded.' : 'Nothing loaded yet.') + ' Columns needed: S/O No and/or Invoice No, Customer Name. Optional: Total Boxes.</p>';
+  h += '<input id="xl" type="file" accept=".xlsx,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>';
+  h += '<div class="row"><button class="btn" data-act="pickxl">Import Excel / CSV</button><button class="btn ghost" data-act="sample">Use sample data</button></div></section>';
+  h += '<section class="card"><h2>Save folder</h2>';
+  {
+    if (!canPickDir() && !state.dir) h += '<p class="muted">This browser cannot pick a folder. Use a Google Drive link below, or Export and send the ZIP.</p>';
+    h += '<p class="muted">' + (state.dir ? 'Photos are saved automatically into: <b>' + esc(state.dir.name) + '</b>' : 'Pick the Google Drive or OneDrive folder where photos should go. On a computer, choose a folder inside your synced Google Drive or OneDrive folder.') + '</p>';
+    if (state.dir) h += '<button class="btn big" data-act="openfolder" style="margin-bottom:10px">Open saved folder</button><div class="row" style="margin-bottom:10px"><button class="btn ghost small" data-act="applaunch" data-pkg="com.google.android.apps.docs">Open Google Drive app</button><button class="btn ghost small" data-act="applaunch" data-pkg="com.microsoft.skydrive">Open OneDrive app</button></div><button class="btn ghost" style="margin-bottom:10px" data-act="mergedirs">Merge duplicate folders</button>';
+    h += '<div class="row">' + (canPickDir() ? '<button class="btn" data-act="pickdir">' + (state.dir ? 'Change folder' : 'Browse for folder') + '</button>' : '') + (state.dir ? '<button class="btn ghost" data-act="cleardir">Remove</button>' : '') + '</div>';
+    h += '<p class="step" style="margin-top:16px">Google Drive folder link</p><p class="muted">Paste the link of a Drive folder you can edit. Works on any phone.</p><input id="gurl" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off"><details style="margin:8px 0"><summary>Google Client ID (one-time setup)</summary><input id="gcid" placeholder="xxxx.apps.googleusercontent.com" value="' + esc(state.gcid) + '" autocomplete="off" style="margin-top:6px"><p class="muted">Create it in Google Cloud Console: enable Google Drive API, create an OAuth client of type Web application, and add this page address (https://rrk224122.github.io) as an authorised JavaScript origin.</p></details><button class="btn" data-act="connectdrive">Connect Drive folder</button>';
+    if (state.dir) h += '<label class="row" style="margin-top:12px"><input type="checkbox" id="autosv"' + (state.settings.autosave !== false ? ' checked' : '') + ' style="width:22px;height:22px"> Auto-save each photo to this folder as it is taken</label>';
+  }
+  h += '</section>';
+  h += '<section class="card"><h2>Packer</h2><input type="text" id="worker" placeholder="Your name" value="' + esc(state.settings.worker) + '" autocomplete="off" readonly>';
+  h += '<label class="row" style="margin-top:12px"><input type="checkbox" id="stamp"' + (state.settings.stamp ? ' checked' : '') + ' style="width:22px;height:22px"> Print order, box, layer, time and name on each photo</label>';
+  h += '<label class="lbl" for="psize">Photo size (smaller is faster)</label><select id="psize">' + [[1280, 'Fast · 1280 px'], [1600, 'Standard · 1600 px'], [2400, 'High · 2400 px']].map(o => '<option value="' + o[0] + '"' + ((state.settings.px || 1600) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>';
+  h += '</section>';
+  h += '<section class="card"><h2>Saved folder layout</h2><div class="scroll"><pre style="margin:0;font-size:.82rem">ABC Traders/\n  2026/\n    14-11-2026_ABC Traders_INV-5001/\n' +
+    (sub ? '      Box_1_Layer_1/\n        Box_1_Layer_1.jpg\n      Box_1_Layer_2/\n        Box_1_Layer_2.jpg\n      Box_2_Layer_1/\n        Box_2_Layer_1.jpg' : '      Box_1_Layer_1.jpg\n      Box_1_Layer_2.jpg\n      Box_2_Layer_1.jpg') + '</pre></div></section>';
+  return h;
+}
+function render(){
+  if (state.fatal){ $id('app').innerHTML = '<section class="card"><h2>Storage unavailable</h2><p>' + esc(state.fatal) + '</p></section>'; return; }
+  if (!state.user || !actOk()){ $id('nav').hidden = true; $id('app').innerHTML = viewAuth(); $id('toast').textContent = state.msg; $id('toast').hidden = !state.msg; return; }
+  try {
+    if (state.active) localStorage.setItem('ppl_act_box', JSON.stringify({ ref: state.active.ref, customer: state.active.customer, box: state.active.box, target: state.target }));
+    else localStorage.removeItem('ppl_act_box');
+  } catch (e){}
+  const v = state.active ? viewCapture : state.browse ? viewBrowse : ({ pack: viewPack, today: viewToday, export: viewExport, data: viewData }[state.tab]);
+  $id('app').innerHTML = v();
+  $id('nav').hidden = !!state.active;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === state.tab));
+  $id('toast').textContent = state.msg; $id('toast').hidden = !state.msg;
+  $id('who').textContent = state.settings.worker || '';
+  if (!state.active && state.tab === 'today' && state.viewStale && !state.viewLoading) loadViewPhotos();
+}
+
+// ------------------------------ actions ------------------------------
+function askConfirm(key){ state.confirm = key; render(); setTimeout(() => { if (state.confirm === key){ state.confirm = ''; render(); } }, 4000); }
+function nextEmpty(a, from){
+  for (let i = 1; i <= a.layers; i++){ const l = ((from - 1 + i) % a.layers) + 1; if (!a.photos[l]) return l; }
+  return null;
+}
+async function openBox(rec){
+  const photos = (await dbAll('photos')).filter(p => p.ref === rec.ref && p.customer === rec.customer && p.box === rec.box);
+  const a = { ref: rec.ref, customer: rec.customer, box: rec.box, layers: rec.layers, date: boxMeta(rec).date, photos: {} };
+  for (const p of photos) a.photos[p.layer] = { blob: p.blob, url: URL.createObjectURL(p.blob) };
+  state.active = a; state.target = nextEmpty(a, 0) || null; render(); window.scrollTo(0, 0);
+}
+async function restoreBox(){
+  if (!state.user || state.active) return;
+  try {
+    const r = JSON.parse(localStorage.getItem('ppl_act_box') || 'null'); if (!r) return;
+    const rec = state.boxes[bkey(r.ref, r.customer, r.box)];
+    if (!rec){ localStorage.removeItem('ppl_act_box'); return; }
+    await openBox(rec);
+    if (r.target && !state.active.photos[r.target]) state.target = r.target;
+    render(); toast('Back in Box ' + r.box + '. If your last photo is missing, take it again.');
+  } catch (e){}
+}
+function closeBox(){
+  if (state.active) for (const p of Object.values(state.active.photos)) URL.revokeObjectURL(p.url);
+  state.active = null; state.target = null; state.confirm = ''; state.viewStale = true;
+}
+async function startBox(){
+  const ref = state.ref, customer = state.customer, box = parseInt(state.boxIn, 10);
+  if (!customer) return toast('Select the customer first.');
+  if (!(box >= 1)) return toast('Enter the box number.');
+  const info = custInfo(), total = info.boxes;
+  if (total && box > total) return toast('This shipment has only ' + total + ' boxes.');
+  const key = bkey(ref, customer, box); let rec = state.boxes[key]; const cnt = state.counts[key] || 0;
+  if (!(rec && cnt > 0)){
+    const fr = sanitize(folderRef(ref, customer)).toLowerCase();
+    const e = state.remote.find(x => x.box === box && sameText(x.customer, customer) && sanitize(x.ref).toLowerCase() === fr && x.photos > 0 && x.dev !== state.dev);
+    if (e) return toast('Box ' + box + ' of this order was already photographed' + ' by ' + whoText(e) + ' (' + e.photos + ' layers' + (e.complete ? ', done' : '') + '). Choose a different box number.');
+  }
+  let layers = parseInt(state.layersIn, 10) || info.layers;
+  let date = state.dateIn, year = String(state.yearIn).trim();
+  if (rec && cnt > 0){ layers = rec.layers; const m = boxMeta(rec); date = m.date; year = m.year; }
+  else {
+    if (!(layers >= 1 && layers <= 99)) return toast('Enter the number of layers (1 to 99).');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return toast('Select the date.');
+    if (!/^\d{4}$/.test(year)) return toast('Enter the year as 4 digits, for example 2026.');
+  }
+  const old = rec ? boxMeta(rec) : null;
+  if (!rec || rec.layers !== layers || old.date !== date || old.year !== year){
+    rec = { ref, customer, box, layers, date, year, complete: false, worker: state.settings.worker || '', started: Date.now() };
+    await dbPut('boxes', key, rec); state.boxes[key] = rec;
+  }
+  await openBox(rec);
+}
+function stampLines(a, layer){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return [a.ref + ' · ' + a.customer, 'BOX ' + a.box + ' · Layer ' + layer + '/' + a.layers,
+    d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + (state.settings.worker ? ' · ' + state.settings.worker : '')];
+}
+async function processPhoto(file, lines){
+  const px = state.settings.px || 1600;
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image', resizeWidth: px, resizeQuality: 'medium' }); }
+  catch (e){ bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  const sc = Math.min(1, px / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * sc), h = Math.round(bmp.height * sc);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.drawImage(bmp, 0, 0, w, h);
+  if (bmp.close) bmp.close();
+  if (lines){
+    const fs = Math.max(14, Math.round(Math.min(w, h) / 32)), pad = Math.round(fs * 0.5), lh = Math.round(fs * 1.3);
+    x.font = '600 ' + fs + 'px system-ui,Arial,sans-serif'; x.textBaseline = 'top';
+    const bw = Math.min(w, Math.max.apply(null, lines.map(l => x.measureText(l).width)) + pad * 2), bh = lines.length * lh + pad * 2 - (lh - fs);
+    x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, h - bh, bw, bh);
+    x.fillStyle = '#fff'; lines.forEach((l, i) => x.fillText(l, pad, h - bh + pad + i * lh));
+  }
+  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('Could not encode photo')), 'image/jpeg', 0.82));
+}
+async function onShot(file){
+  const a = state.active, layer = state.target;
+  if (!file || !a || !layer) return;
+  state.busy = true; render();
+  try {
+    const blob = await processPhoto(file, state.settings.stamp ? stampLines(a, layer) : null);
+    const rec = { ref: a.ref, customer: a.customer, box: a.box, layer, blob, time: Date.now(), worker: state.settings.worker || '' };
+    if (a.photos[layer]) URL.revokeObjectURL(a.photos[layer].url);
+    a.photos[layer] = { blob, url: URL.createObjectURL(blob) };
+    state.counts[bkey(a.ref, a.customer, a.box)] = Object.keys(a.photos).length;
+    state.target = nextEmpty(a, layer);
+    state.busy = false; render(); window.scrollTo(0, 0);
+    await dbPut('photos', pkey(a.ref, a.customer, a.box, layer), rec);
+    setTimeout(() => autoSave(rec), 400);
+  } catch (e){ state.busy = false; render(); toast('Photo not saved: ' + e.message); }
+}
+async function completeBox(){
+  const a = state.active; if (!a || Object.keys(a.photos).length !== a.layers) return;
+  const key = bkey(a.ref, a.customer, a.box), rec = Object.assign({}, state.boxes[key], { complete: true, finished: Date.now() });
+  await dbPut('boxes', key, rec); state.boxes[key] = rec;
+  const n = a.box; closeBox(); state.boxIn = ''; state.layersIn = ''; render(); toast('Box ' + n + ' complete.'); scheduleLog(a.ref); finishIfReady(a.ref);
+}
+async function resetBox(){
+  const a = state.active; if (!a) return;
+  for (let i = 1; i <= a.layers; i++) await dbDel('photos', pkey(a.ref, a.customer, a.box, i));
+  await dbDel('boxes', bkey(a.ref, a.customer, a.box));
+  await refreshStore(); closeBox(); render(); toast('Box cleared. You can start it again.');
+}
+async function deleteRef(ref){
+  const photos = await dbAll('photos');
+  for (const p of photos) if (p.ref === ref) await dbDel('photos', pkey(p.ref, p.customer, p.box, p.layer));
+  for (const b of Object.values(state.boxes)) if (b.ref === ref) await dbDel('boxes', bkey(b.ref, b.customer, b.box));
+  delete state.zips[ref]; state.confirm = ''; state.viewStale = true; await refreshStore(); render(); toast(ref + ' deleted from this phone.');
+}
+async function gatherFiles(ref, all){
+    const photos = (all || await dbAll('photos')).filter(p => p.ref === ref).sort((a, b) => a.customer.localeCompare(b.customer) || a.box - b.box || a.layer - b.layer);
+    const files = [], rows = [], log = [['order', 'customer', 'box', 'layer', 'file', 'packed_by', 'taken_at', 'box_status', 'layers']];
+    for (const p of photos){
+      const b = state.boxes[bkey(ref, p.customer, p.box)] || { started: p.time };
+      const m = boxMeta(b);
+      const path = photoPath({ customer: p.customer, year: m.year, date: m.date, ref: folderRef(ref, p.customer), box: p.box, layer: p.layer, subfolder: state.settings.subfolder });
+      files.push({ path, blob: p.blob });
+      log.push([ref, p.customer, p.box, p.layer, path, p.worker || '', new Date(p.time).toISOString(), b.complete ? 'complete' : 'incomplete', b.layers || '']);
+      rows.push({ order: ref, customer: p.customer, box: p.box, layer: p.layer, file: path, by: p.worker || '', at: new Date(p.time).toISOString(), status: b.complete ? 'complete' : 'incomplete', layers: b.layers || 0, dev: state.dev, phone: phoneName() });
+    }
+    files.rows = rows;
+    files.push({ path: 'packing_log_' + sanitize(ref) + '.csv', blob: new Blob(['\ufeff' + log.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n'], { type: 'text/csv' }) });
+    return files;
+}
+async function buildZip(ref){
+  state.busy = true; state.busyRef = ref; render();
+  try {
+    const fl = await gatherFiles(ref), zf = [];
+    for (const f of fl) zf.push({ path: f.path, data: new Uint8Array(await f.blob.arrayBuffer()) });
+    state.zips[ref] = { blob: makeZip(zf), name: sanitize(ref) + '.zip' };
+  }
+  catch (e){ toast('Could not prepare ZIP: ' + e.message); }
+  state.busy = false; state.busyRef = ''; render();
+}
+const canPickDir = () => typeof window.showDirectoryPicker === 'function';
+async function pickDir(){
+  try {
+    const h = await window.showDirectoryPicker({ id: 'packphoto', mode: 'readwrite' });
+    state.dir = h; state.saved = {}; state.written = {}; state.remote = []; state.known = {}; state.logCache = {}; state.logSig = {}; state.verifiedAt = 0; saveKnown(); dirCache.clear(); saveWritten(); await dbPut('meta', 'dir', h); render(); loadShared(false); toast('Save folder: ' + h.name);
+  } catch (e){ if (e.name !== 'AbortError') toast('Could not open that folder: ' + e.message); }
+}
+async function clearDir(){ state.dir = null; state.known = {}; state.logCache = {}; state.logSig = {}; state.verifiedAt = 0; saveKnown(); state.saved = {}; state.written = {}; dirCache.clear(); saveWritten(); await dbDel('meta', 'dir').catch(() => {}); render(); }
+// Always builds Customer / Year / Date_Customer_Invoice / image inside the chosen folder.
+// Speed: folder handles are cached, each folder is listed once, files are written 4 at a time,
+// and sizes of files already written are remembered on the phone.
+const dirCache = new Map(), WRITE_PAR = 4;
+// ---- Google Drive folder by link (acts like a normal folder handle, so all saving code is shared) ----
+const DEFAULT_GCID = '';   // optional: put your Google OAuth Client ID here once
+const FOLDER_MIME = 'application/vnd.google-apps.folder', GAPI = 'https://www.googleapis.com/drive/v3/';
+let gTok = null, gtc = null;
+try { gTok = JSON.parse(sessionStorage.getItem('ppl_gtok') || 'null'); } catch (e){}
+const gTokOk = () => gTok && gTok.exp > Date.now() ? gTok.t : '';
+function loadGsi(){
+  return new Promise((res, rej) => {
+    if (window.google && google.accounts && google.accounts.oauth2) return res();
+    const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.onload = () => res(); sc.onerror = () => rej(new Error('Could not reach Google. Check the internet.'));
+    document.head.appendChild(sc);
+  });
+}
+async function getToken(){
+  if (gTokOk()) return gTok.t;
+  if (!state.gcid) throw new Error('Enter the Google Client ID first (Setup > Save folder).');
+  await loadGsi();
+  return new Promise((res, rej) => {
+    gtc = gtc || google.accounts.oauth2.initTokenClient({ client_id: state.gcid, scope: 'https://www.googleapis.com/auth/drive', callback: () => {} });
+    gtc.callback = r => {
+      if (r && r.access_token){ gTok = { t: r.access_token, exp: Date.now() + ((r.expires_in || 3600) - 90) * 1000 }; try { sessionStorage.setItem('ppl_gtok', JSON.stringify(gTok)); } catch (e){} res(gTok.t); }
+      else rej(new Error((r && r.error) || 'Google sign-in was cancelled.'));
+    };
+    gtc.error_callback = e => rej(new Error('Google sign-in failed' + (e && e.type ? ' (' + e.type + ')' : '') + '.'));
+    gtc.requestAccessToken({ prompt: '' });
+  });
+}
+const nfErr = () => { const e = new Error('Not found'); e.name = 'NotFoundError'; return e; };
+async function dfetch(url, opt){
+  const t = gTokOk(); if (!t) throw new Error('Google access expired. Tap Save or Take photo again to sign in.');
+  const r = await fetch(url.startsWith('http') ? url : GAPI + url, Object.assign({}, opt, { headers: Object.assign({ Authorization: 'Bearer ' + t }, (opt && opt.headers) || {}) }));
+  if (r.status === 401){ gTok = null; throw new Error('Google access expired. Tap Save or Take photo again to sign in.'); }
+  if (r.status === 404) throw nfErr();
+  if (!r.ok) throw new Error('Google Drive error ' + r.status + (r.status === 403 ? ' (no edit permission or limit reached)' : ''));
+  return r;
+}
+const dj = async (u, o) => (await dfetch(u, o)).json();
+function driveFile(f, parent){
+  const h = { kind: 'file', drive: true, name: f.name, id: f.id || null, sz: +f.size || 0, mt: f.modifiedTime ? Date.parse(f.modifiedTime) : 0 };
+  h.getFile = async () => ({ name: h.name, size: h.sz, lastModified: h.mt, text: async () => (await h.getBlob()).text() });
+  h.getBlob = async () => (await dfetch('files/' + h.id + '?alt=media&supportsAllDrives=true')).blob();
+  h.trash = () => dj('files/' + h.id + '?supportsAllDrives=true', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) });
+  h.createWritable = async () => {
+    let blob = null;
+    return {
+      write: async b => { blob = b instanceof Blob ? b : new Blob([b]); },
+      close: async () => {
+        const meta = h.id ? {} : { name: h.name, parents: [parent.id] };
+        const body = new Blob(['--PPLB\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) + '\r\n--PPLB\r\nContent-Type: ' + (blob.type || 'application/octet-stream') + '\r\n\r\n', blob, '\r\n--PPLB--']);
+        const r = await dj('https://www.googleapis.com/upload/drive/v3/files' + (h.id ? '/' + h.id : '') + '?uploadType=multipart&supportsAllDrives=true&fields=id,size,modifiedTime', { method: h.id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'multipart/related; boundary=PPLB' }, body });
+        h.id = r.id; h.sz = +r.size || blob.size; h.mt = Date.parse(r.modifiedTime) || Date.now();
+        if (parent.kids) parent.kids.set(h.name + '|f', h);
+        state.known['fid:' + parent.id + '/' + h.name] = h.id; saveKnown();
+      }
+    };
+  };
+  return h;
+}
+function driveDir(id, name, root){
+  const d = { kind: 'directory', drive: true, id, name, kids: null };
+  if (root){
+    d.queryPermission = async () => gTokOk() ? 'granted' : 'prompt';
+    d.requestPermission = async () => { try { return await getToken() ? 'granted' : 'denied'; } catch (e){ toast(e.message); return 'denied'; } };
+  }
+  const load = async () => {
+    if (d.kids) return d.kids;
+    const m = new Map(); let pt = '';
+    do {
+      const r = await dj('files?q=' + encodeURIComponent("'" + id + "' in parents and trashed=false") + '&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,createdTime)&pageSize=1000&supportsAllDrives=true&includeItemsFromAllDrives=true' + (pt ? '&pageToken=' + pt : ''));
+      for (const f of r.files){
+        const isD = f.mimeType === FOLDER_MIME, k = f.name + (isD ? '|d' : '|f'), h = isD ? driveDir(f.id, f.name) : driveFile(f, d), cur = m.get(k);
+        h.ct = Date.parse(f.createdTime) || 0;
+        if (!cur) m.set(k, h);
+        else if (!isD){ if (h.ct < cur.ct){ h.dups = (cur.dups || []).concat([cur]); m.set(k, h); } else (cur.dups = cur.dups || []).push(h); }   // same-named files: oldest wins
+      }
+      pt = r.nextPageToken;
+    } while (pt);
+    return d.kids = m;
+  };
+  d.getDirectoryHandle = async (q, o) => {
+    const k = await load(); let h = k.get(q + '|d'); if (h) return h;
+    if (!o || !o.create) throw nfErr();
+    const r = await dj('files?supportsAllDrives=true&fields=id', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: q, mimeType: FOLDER_MIME, parents: [id] }) });
+    h = driveDir(r.id, q); k.set(q + '|d', h); return h;
+  };
+  d.getFileHandle = async (q, o) => {
+    const k = await load(), fk = 'fid:' + id + '/' + q; let h = k.get(q + '|f');
+    if (h){ if (state.known[fk] !== h.id){ state.known[fk] = h.id; saveKnown(); } return h; }
+    if (state.known[fk]){                                                  // Drive's list can lag behind: trust the file we already know
+      try { const f = await dj('files/' + state.known[fk] + '?fields=id,name,size,modifiedTime,createdTime,trashed&supportsAllDrives=true'); if (!f.trashed){ h = driveFile(f, d); k.set(q + '|f', h); return h; } }
+      catch (e){ if (e.name !== 'NotFoundError') throw e; }
+      delete state.known[fk];
+    }
+    if (!o || !o.create) throw nfErr();
+    return driveFile({ name: q }, d);
+  };
+  d.entries = async function*(){ const k = await load(); for (const h of Array.from(k.values())) yield [h.name, h]; };
+  d.removeEntry = async n => {
+    const k = await load(), key = k.has(n + '|d') ? n + '|d' : n + '|f', h = k.get(key); if (!h) throw nfErr();
+    await dj('files/' + h.id + '?supportsAllDrives=true', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trashed: true }) }); d.kids = null;
+  };
+  return d;
+}
+const driveId = u => { u = String(u).trim(); const m = u.match(/\/folders\/([\w-]+)/) || u.match(/[?&]id=([\w-]+)/); return m ? m[1] : /^[\w-]{20,}$/.test(u) ? u : ''; };
+async function connectDrive(){
+  const gc = val('gcid').trim(); if (gc){ state.gcid = gc; await dbPut('meta', 'gcid', gc); }
+  const id = driveId(val('gurl')); if (!id) return toast('Paste the link of a Google Drive folder.');
+  try {
+    await getToken();
+    const f = await dj('files/' + id + '?fields=id,name,mimeType,capabilities(canAddChildren)&supportsAllDrives=true');
+    if (f.mimeType !== FOLDER_MIME) throw new Error('That link is not a folder.');
+    if (!f.capabilities || !f.capabilities.canAddChildren) throw new Error('You only have view access. Ask the owner to give you Editor access.');
+    state.dir = driveDir(f.id, f.name, true); state.saved = {}; state.written = {}; state.remote = []; state.known = {}; state.logCache = {}; state.logSig = {}; state.verifiedAt = 0; saveKnown(); dirCache.clear(); saveWritten();
+    await dbPut('meta', 'dir', { drive: { id: f.id, name: f.name } }); render(); toast('Connected to Google Drive folder: ' + f.name); loadShared(false);
+  } catch (e){ toast(e.name === 'NotFoundError' ? 'Folder not found. Check the link and that your Google account can open it.' : e.message); }
+}
+async function childDir(parent, q, create){
+  try { return await parent.getDirectoryHandle(q); } catch (e){ if (e.name !== 'NotFoundError') throw e; }
+  const low = q.toLowerCase().trim();
+  for await (const [n, h] of parent.entries()) if (h.kind === 'directory' && n.toLowerCase().trim() === low) return h;
+  if (!create) throw new DOMException('missing', 'NotFoundError');
+  return parent.getDirectoryHandle(q, { create: true });
+}
+const rootKey = () => state.dir.drive ? 'd:' + state.dir.id : 'f';
+const saveKnown = () => dbPut('meta', 'known', state.known).catch(() => {});
+async function getDir(parts, create){
+  let d = state.dir, key = '';
+  for (const q of parts){
+    key += '/' + q.toLowerCase();
+    let pr = dirCache.get(key);
+    if (!pr){
+      const par = d, kk = rootKey() + key;
+      pr = (async () => {
+        const kn = state.known[kk];
+        if (kn){
+          try {
+            if (kn.drive){ if ((await dj('files/' + kn.drive.id + '?fields=id,trashed&supportsAllDrives=true')).trashed) throw nfErr(); return driveDir(kn.drive.id, kn.drive.name); }
+            await kn.entries().next(); return kn;
+          } catch (e){ delete state.known[kk]; }
+        }
+        const h = await childDir(par, q, create);
+        state.known[kk] = h.drive ? { drive: { id: h.id, name: h.name } } : h; saveKnown();
+        return h;
+      })();
+      dirCache.set(key, pr); pr.catch(() => dirCache.delete(key));
+    }
+    d = await pr;
+  }
+  return d;
+}
+// All folder writes run one after another, so two saves can never create the same folder twice.
+let ioChain = Promise.resolve();
+function exclusive(fn){ const r = ioChain.then(fn); ioChain = r.catch(() => {}); return r; }
+async function listDir(parts, lc){
+  const k = parts.join('/'); if (lc.has(k)) return lc.get(k);
+  const m = new Map();
+  try { const d = await getDir(parts, false); for await (const [n, h] of d.entries()) if (h.kind === 'file') m.set(n, h); } catch (e){}
+  lc.set(k, m); return m;
+}
+async function haveFile(path, size, lc){
+  const parts = path.split('/'), name = parts.pop(), h = (await listDir(parts, lc)).get(name);
+  if (!h) return false;
+  if (state.written[path] === size) return true;
+  try { if ((await h.getFile()).size !== size) return false; state.written[path] = size; return true; } catch (e){ return false; }
+}
+async function writeToDir(path, blob){
+  const parts = path.split('/'), name = parts.pop();
+  for (let t = 0; t < 2; t++){
+    try {
+      const d = await getDir(parts, true);
+      const w = await (await d.getFileHandle(name, { create: true })).createWritable();
+      await w.write(blob); await w.close();
+      state.written[path] = blob.size; return;
+    } catch (e){ if (t) throw e; dirCache.clear(); }
+  }
+}
+async function pool(items, n, fn){
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await fn(items[i++]); }));
+}
+const saveWritten = () => dbPut('meta', 'written', state.written).catch(() => {});
+async function dirReady(ask){
+  const h = state.dir; if (!h) return false;
+  const o = { mode: 'readwrite' };
+  if (await h.queryPermission(o) === 'granted') return true;
+  return ask ? (await h.requestPermission(o)) === 'granted' : false;
+}
+const allRefs = () => Array.from(new Set(Object.values(state.boxes).map(b => b.ref)));
+async function checkRef(ref, all){
+  const files = (await gatherFiles(ref, all)).filter(f => !f.path.endsWith('.csv')), lc = new Map(); let saved = 0;
+  for (const f of files) if (await haveFile(f.path, f.blob.size, lc)) saved++;
+  state.saved[ref] = { saved, total: files.length }; saveWritten();
+}
+async function localRef(ref, all){
+  const files = (await gatherFiles(ref, all)).filter(f => !f.path.endsWith('.csv')); let saved = 0;
+  for (const f of files) if (state.written[f.path] === f.blob.size) saved++;
+  state.saved[ref] = { saved, total: files.length, local: true };
+}
+// Opening the app uses the phone's own record of what was saved (no folder permission needed).
+// "Verify" really looks inside the folder.
+async function checkAll(verify){
+  if (!state.dir || state.checking) return;
+  state.checking = true;
+  try {
+    let ok = false;
+    if (verify){ ok = await dirReady(true); }
+    const all = await dbAll('photos');
+    for (const r of allRefs()){
+      try { if (ok) await checkRef(r, all); else await localRef(r, all); } catch (e){ state.saved[r] = { unknown: true }; }
+    }
+  } catch (e){ for (const r of allRefs()) state.saved[r] = { unknown: true }; }
+  state.checking = false; render();
+}
+async function writeRef(ref, all){
+  const files = await gatherFiles(ref, all), lc = new Map(), todo = [], bad = [];
+  let ok = 0, skipped = 0, photosOk = 0;
+  for (const f of files){
+    if (f.path.endsWith('.csv')){ ok++; continue; }
+    if (await haveFile(f.path, f.blob.size, lc)){ skipped++; ok++; photosOk++; } else todo.push(f);
+  }
+  for (const dp of new Set(todo.map(f => f.path.split('/').slice(0, -1).join('/')))){
+    try { await getDir(dp ? dp.split('/') : [], true); } catch (e){}
+  }
+  await pool(todo, WRITE_PAR, async f => {
+    try { await writeToDir(f.path, f.blob); ok++; if (!f.path.endsWith('.csv')) photosOk++; }
+    catch (e){ bad.push(f.path.split('/').pop()); }
+  });
+  try {
+    let m = 0; for (const dp of new Set(files.map(f => f.path.split('/').slice(0, -1).join('/')).filter(Boolean))) m += await mergeDirs(state.dir, dp.split('/'));
+    if (m) dirCache.clear();
+  } catch (e){}
+  saveWritten();
+  try { await mergeLog(ownRows(files.rows)); } catch (e){}
+  state.saved[ref] = { saved: photosOk, total: files.length - 1 };
+  return { total: files.length, ok, bad, skipped };
+}
+const saveMsg = r => r.bad.length ? r.ok + ' of ' + r.total + ' files saved. Failed: ' + r.bad.slice(0, 3).join(', ')
+  : (r.total - 1 - r.skipped > 0 ? (r.total - 1 - r.skipped) + ' new photos saved' : 'Nothing new: all photos are already in the folder') + (r.skipped && r.total - 1 - r.skipped > 0 ? ' (' + r.skipped + ' already there)' : '');
+async function saveToDir(ref){ return exclusive(() => saveToDir_(ref)); }
+async function saveToDir_(ref){
+  if (!state.dir) return;
+  try {
+    if (!await dirReady(true)) throw new Error('Folder access was not allowed');
+    state.busy = true; state.busyRef = ref; render();
+    const r = await writeRef(ref);
+    const m = await markDone(ref, r);
+    toast(ref + ': ' + saveMsg(r) + (m.length ? '. Order complete and saved, removed from the order list.' : ''));
+  } catch (e){ toast('Save failed: ' + e.message); }
+  state.busy = false; state.busyRef = ''; render();
+}
+async function saveAllToDir(){ return exclusive(() => saveAllToDir_()); }
+async function saveAllToDir_(){
+  if (!state.dir) return;
+  try {
+    if (!await dirReady(true)) throw new Error('Folder access was not allowed');
+    const refs = allRefs(); let fresh = 0, fail = 0, there = 0;
+    state.busy = true; const all = await dbAll('photos');
+    for (const ref of refs){ state.busyRef = ref; render(); const r = await writeRef(ref, all); fail += r.bad.length; there += r.skipped; await markDone(ref, r); fresh += r.total - 1 - r.skipped - r.bad.length; }
+    toast(fail ? fresh + ' saved, ' + fail + ' failed. Tap Save again.' : (fresh ? fresh + ' new photos saved' : 'Nothing new: everything is already in the folder') + (there && fresh ? ' (' + there + ' already there)' : ''));
+  } catch (e){ toast('Save failed: ' + e.message); }
+  state.busy = false; state.busyRef = ''; render();
+}
+// Auto-save one photo to the chosen folder right after it is taken.
+// ---- several phones, one folder: read what the other phones have saved ----
+function csvParse(t){
+  const rows = []; let r = [], c = '', q = false; t = t.replace(/^\ufeff/, '');
+  for (let i = 0; i < t.length; i++){
+    const ch = t[i];
+    if (q){ if (ch === '"'){ if (t[i + 1] === '"'){ c += '"'; i++; } else q = false; } else c += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ','){ r.push(c); c = ''; }
+    else if (ch === '\n'){ r.push(c); rows.push(r); r = []; c = ''; }
+    else if (ch !== '\r') c += ch;
+  }
+  if (c || r.length){ r.push(c); rows.push(r); }
+  return rows;
+}
+const sameText = (a, b) => sanitize(a).toLowerCase() === sanitize(b).toLowerCase();
+const whoText = e => [(e.by || []).join(', ')].concat(e.phones || []).filter(Boolean).join(' · ') || 'other phone';
+function remoteFor(ref, customer){
+  const fr = folderRef(ref, customer);
+  return state.remote.filter(e => e.photos > 0 && sameText(e.ref, fr) && sameText(e.customer, customer));
+}
+function doneBoxSet(ref, customer){
+  const set = new Set(Object.values(state.boxes).filter(b => b.ref === ref && b.customer === customer && b.complete).map(b => b.box)), fr = folderRef(ref, customer);
+  for (const e of state.remote) if (e.complete && sameText(e.ref, fr) && sameText(e.customer, customer)) set.add(e.box);
+  return set;
+}
+async function applyRemoteDone(){
+  let n = 0;
+  for (const row of state.orders){
+    if (!(row.boxes > 0) || isDone(row)) continue;
+    if (doneBoxSet(row.invoice || row.so, row.customer).size >= row.boxes){ state.done[rowKey(row)] = { boxes: row.boxes, at: Date.now() }; n++; }
+  }
+  if (n) await dbPut('meta', 'done', state.done).catch(() => {});
+}
+// ONE common log for all phones: logs/common_log.csv. Every phone merges its own rows into it; sync reads only this file.
+const fresh = h => { if (h && h.drive) h.kids = null; return h; };   // Drive lists are cached per session: refresh before reading
+const LOG_HDR = ['order', 'customer', 'box', 'layer', 'file', 'packed_by', 'taken_at', 'box_status', 'layers', 'device', 'phone'];
+const phoneName = () => state.settings.phone || ('Phone ' + String(state.dev).slice(0, 4));
+const ownRows = rows => (rows || []).filter(r => state.written[r.file] != null);   // only photos that are really in the folder
+const sigOf = m => m.size + ':' + m.lastModified;
+async function freshSig(h){
+  if (h.drive){ const r = await dj('files/' + h.id + '?fields=size,modifiedTime&supportsAllDrives=true'); return +r.size + ':' + Date.parse(r.modifiedTime); }
+  return sigOf(await h.getFile());
+}
+function rowsFromCsv(text, dev, map){
+  const rows = csvParse(text), hdr = rows.shift() || [], ix = {}; hdr.forEach((x, i) => ix[x] = i);
+  for (const r of rows){
+    if (r.length < 8 || ix.file == null) continue;
+    map.set(r[ix.file], { order: r[ix.order], customer: r[ix.customer], box: +r[ix.box], layer: +r[ix.layer], file: r[ix.file], by: r[ix.packed_by] || '', at: r[ix.taken_at] || '', status: r[ix.box_status] || '', layers: +r[ix.layers] || 0, dev: r[ix.device] || dev || '', phone: r[ix.phone] || '' });
+  }
+}
+async function readLogRows(){
+  const map = new Map();
+  try {
+    const d = fresh(await getDir(['logs'], false)), h = await d.getFileHandle('common_log.csv'), meta = await h.getFile(), sig = sigOf(meta);
+    const dups = h.dups || [];
+    if (!dups.length && state.logCache.sig === sig && state.logCache.rows) state.logCache.rows.forEach(r => map.set(r.file, r));
+    else {
+      rowsFromCsv(await meta.text(), '', map);
+      for (const x of dups){ try { const dm = new Map(); rowsFromCsv(await (await x.getFile()).text(), '', dm); dm.forEach((v, k) => { if (!map.has(k)) map.set(k, v); }); } catch (e){} }
+      if (!dups.length){ state.logCache = { sig, rows: Array.from(map.values()) }; dbPut('meta', 'logcache', state.logCache).catch(() => {}); }
+    }
+    return { map, h, sig, exists: true, dups };
+  } catch (e){ if (e.name && e.name !== 'NotFoundError') throw e; }
+  for (const where of [['logs'], []]){                                      // older per-phone logs, until the common log exists
+    let d; try { d = fresh(await getDir(where, false)); } catch (e){ continue; }
+    for await (const [n, h] of d.entries()){
+      if (h.kind !== 'file' || !/^packing_log_.*\.csv$/i.test(n)) continue;
+      try { rowsFromCsv(await (await h.getFile()).text(), (n.match(/_([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})\.csv$/i) || [])[1] || '', map); } catch (e){}
+    }
+  }
+  return { map, h: null, sig: '', exists: false, dups: [] };
+}
+// Read, merge, write back. If another phone wrote in between, read again and merge again (up to 3 times).
+async function mergeLog(own, opt){
+  for (let t = 0; t < 3; t++){
+    const cur = await readLogRows(), map = cur.map; let changed = (!cur.exists && (own.length > 0 || map.size > 0)) || cur.dups.length > 0;
+    for (const r of own){ const o = map.get(r.file); if (!o || JSON.stringify(o) !== JSON.stringify(r)){ map.set(r.file, r); changed = true; } }
+    for (const r of (opt && opt.add) || []) if (!map.has(r.file)){ map.set(r.file, r); changed = true; }
+    for (const k of (opt && opt.remove) || []) if (map.delete(k)) changed = true;
+    if (!changed) return false;
+    const blob = new Blob(['\ufeff' + [LOG_HDR].concat(Array.from(map.values()).map(r => [r.order, r.customer, r.box, r.layer, r.file, r.by, r.at, r.status, r.layers || '', r.dev, r.phone || ''])).map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n'], { type: 'text/csv' });
+    if (cur.h && await freshSig(cur.h) !== cur.sig) continue;               // someone else wrote meanwhile
+    await writeToDir('logs/common_log.csv', blob); state.logCache = {};
+    const chk = (await readLogRows()).map;                                  // confirm nobody overwrote our rows
+    if (own.every(r => chk.has(r.file)) && ((opt && opt.add) || []).every(r => chk.has(r.file))){
+      for (const x of cur.dups) { try { await x.trash(); } catch (e){} }  // copies of the log made by mistake: merged above, now removed
+      return true;
+    }
+  }
+  return false;
+}
+async function writeLogs(refs, silent){
+  if (!state.dir || !await dirReady(!silent)) return false;
+  const all = await dbAll('photos'), own = [];
+  for (const r of refs){ try { ownRows((await gatherFiles(r, all)).rows).forEach(x => own.push(x)); } catch (e){} }
+  try { await mergeLog(own); } catch (e){}
+  return true;
+}
+// Backend check: compare the real folders with the common log; add photos the log misses, drop rows whose photo is gone.
+const PHOTO_RE = /^Box_(\d+)_Layer_(\d+)\.(jpe?g|png|webp)$/i;
+async function verifyFolders(silent){
+  if (!state.dir || state.verifying) return;
+  state.verifying = true;
+  try {
+    if (!await dirReady(!silent)) return;
+    const found = new Map();
+    for await (const [cn, ch] of fresh(state.dir).entries()){
+      if (ch.kind !== 'directory' || cn.toLowerCase() === 'logs') continue;
+      for await (const [yn, yh] of fresh(ch).entries()){ if (yh.kind !== 'directory') continue;
+        for await (const [on, oh] of fresh(yh).entries()){ if (oh.kind !== 'directory') continue;
+          for await (const [fn, fh] of fresh(oh).entries()){
+            const m = fh.kind === 'file' && fn.match(PHOTO_RE); if (!m) continue;
+            const path = [cn, yn, on, fn].join('/');
+            found.set(path, { order: on.slice(11 + cn.length + 1), customer: cn, box: +m[1], layer: +m[2], file: path, by: '', at: '', status: '', layers: 0, dev: '' });
+          }
+        }
+      }
+    }
+    const cur = await readLogRows(), add = [], remove = new Set();
+    for (const [pth, r] of found) if (!cur.map.has(pth)) add.push(r);
+    if (found.size) for (const [pth, r] of cur.map) if (!found.has(pth) && (!r.at || Date.now() - Date.parse(r.at) > 600000)) remove.add(pth);
+    if (add.length || remove.size) await exclusive(() => mergeLog([], { add, remove }));
+    state.verifiedAt = Date.now(); dbPut('meta', 'verifiedAt', state.verifiedAt).catch(() => {});
+    if (!silent) toast('Checked ' + found.size + ' photos in the folders. Added ' + add.length + ' to the log, removed ' + remove.size + '.');
+    if (add.length || remove.size) setTimeout(() => loadShared(true), 300);
+  } catch (e){ if (!silent) toast('Check failed: ' + e.message); }
+  state.verifying = false; render();
+}
+async function loadShared(silent, deep){
+  if (!state.dir || state.loadingShared) return;
+  state.remoteTry = Date.now(); state.loadingShared = true;
+  try {
+    if (!await dirReady(!silent)){ if (!silent) toast('Folder access was not allowed.'); state.loadingShared = false; return; }
+    if (deep) await verifyFolders(false);
+    let cur = await readLogRows();
+    if (cur.dups.length){ try { await exclusive(() => mergeLog([])); cur = await readLogRows(); } catch (e){} }
+    if (!cur.map.size && !state.bootScanned){ state.bootScanned = true; await verifyFolders(true); cur = await readLogRows(); }
+    const rem = {};
+    for (const r of cur.map.values()){
+      const pp = r.file.split('/'); pp.pop(); if (pp.length < 3 || !(r.box >= 1)) continue;
+      const dir = pp.join('/'), k = dir + '|' + r.box;
+      const e = rem[k] || (rem[k] = { dir, customer: r.customer || pp[0], ref: pp[2].slice(11 + pp[0].length + 1), box: r.box, layers: 0, complete: false, ls: new Set(), by: new Set(), ph: new Set(), dev: '' });
+      if (r.phone || r.dev) e.ph.add(r.phone || ('Phone ' + String(r.dev).slice(0, 4)));
+      if (r.layer >= 1) e.ls.add(r.layer); if (r.layers) e.layers = Math.max(e.layers, r.layers); if (r.status === 'complete') e.complete = true; if (r.by) e.by.add(r.by); if (r.dev) e.dev = r.dev;
+    }
+    state.remote = Object.values(rem).map(e => ({ dir: e.dir, customer: e.customer, ref: e.ref, box: e.box, layers: e.layers || Math.max(0, ...e.ls), complete: e.complete, photos: e.ls.size, by: [...e.by], phones: [...e.ph], dev: e.dev }));
+    state.remoteAt = Date.now(); await dbPut('meta', 'remote', state.remote).catch(() => {}); await applyRemoteDone();
+    if (!silent) toast('Synced: ' + state.remote.length + ' boxes from all phones.');
+    if (Date.now() - (state.verifiedAt || 0) > 15 * 60000) setTimeout(() => verifyFolders(true), 2500);
+  } catch (e){ if (!silent) toast('Could not read the folder: ' + e.message); }
+  state.loadingShared = false; render();
+}
+function sharedCard(){
+  if (!state.dir) return '';
+  const g = new Map();
+  for (const e of state.remote){ const k = e.dir.split('/').slice(0, 3).join('/'); if (!g.has(k)) g.set(k, { e, boxes: 0, done: 0, photos: 0, by: new Set() }); const x = g.get(k); x.boxes++; if (e.complete) x.done++; x.photos += e.photos; e.by.forEach(b => x.by.add(b)); (e.phones || []).forEach(b => x.by.add(b)); }
+  let h = '<section class="card"><h2>All phones</h2><p class="muted" style="margin:0 0 8px">' + (state.remoteAt ? 'Read from ' + esc(state.dir.name) + ' at ' + new Date(state.remoteAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Tap Sync to share this phone\'s log and read the other phones\'.') + '</p>';
+  for (const x of Array.from(g.values()).slice(0, 25)){
+    const row = state.orders.find(o => sameText(o.customer, x.e.customer) && sameText(o.invoice || o.so, x.e.ref)), tot = row && row.boxes ? row.boxes : x.boxes;
+    h += '<div style="padding:8px 0;border-top:1px solid #e3e8e4"><b>' + esc(x.e.ref) + '</b> · ' + esc(x.e.customer) + '<br><span class="muted">' + x.done + ' of ' + tot + ' boxes done · ' + x.photos + ' photos' + (x.by.size ? ' · ' + esc([...x.by].join(', ')) : '') + '</span></div>';
+  }
+  if (!g.size) h += '<p class="muted">Nothing found in the folder yet.</p>';
+  return h + '<button class="btn ghost" style="margin-top:10px" data-act="loadshared"' + (state.loadingShared ? ' disabled' : '') + '>' + (state.loadingShared ? 'Syncing…' : 'Sync with folder') + '</button><button class="btn ghost small" style="margin:10px 0 0 8px" data-act="deepsync"' + (state.loadingShared ? ' disabled' : '') + '>Verify folders now</button></section>';
+}
+// Merge folders that have the same name (ignoring capitals) inside the save folder, at every level.
+async function moveInto(src, dst){
+  for await (const [n, h] of src.entries()){
+    if (h.kind === 'directory'){ await moveInto(h, await childDir(dst, n, true)); continue; }
+    const f = await h.getFile(); let keep = false;
+    try { const t = await (await dst.getFileHandle(n)).getFile(); keep = t.size === f.size || t.lastModified >= f.lastModified; } catch (e){}
+    if (keep) continue;
+    const w = await (await dst.getFileHandle(n, { create: true })).createWritable(); await w.write(h.getBlob ? await h.getBlob() : f); await w.close();
+    if ((await (await dst.getFileHandle(n)).getFile()).size !== f.size) throw new Error('Copy check failed for ' + n);
+  }
+}
+async function mergeDirs(parent, path){
+  const groups = new Map();
+  for await (const [n, h] of parent.entries()) if (h.kind === 'directory'){
+    const k = n.toLowerCase().trim(); if (path && k !== path[0].toLowerCase().trim()) continue;
+    if (!groups.has(k)) groups.set(k, []); groups.get(k).push([n, h]);
+  }
+  let merged = 0;
+  for (const g of groups.values()){
+    if (g.length > 1){
+      for (let i = 1; i < g.length; i++){ await moveInto(g[i][1], g[0][1]); await moveInto(g[0][1], g[i][1]); }   // every copy is now complete
+      for (let i = 1; i < g.length; i++){ await parent.removeEntry(g[i][0], { recursive: true }); merged++; }      // removing any one is safe
+    }
+    const keep = g.length > 1 ? await parent.getDirectoryHandle(g[0][0]) : g[0][1];
+    if (!path || path.length > 1) merged += await mergeDirs(keep, path ? path.slice(1) : null);
+  }
+  return merged;
+}
+async function mergeAll(){
+  if (!state.dir || !confirm('Merge folders with the same name inside ' + state.dir.name + '? Photos are copied into one folder first, then the extra folder is deleted.')) return;
+  try {
+    if (!await dirReady(true)) throw new Error('Folder access was not allowed');
+    state.busy = true; render();
+    const n = await exclusive(() => mergeDirs(state.dir));
+    dirCache.clear(); state.saved = {}; toast(n ? n + ' duplicate folders merged.' : 'No duplicate folders found.');
+  } catch (e){ toast('Merge stopped: ' + e.message); }
+  state.busy = false; render();
+}
+// This phone's log (logs/packing_log_<order>_<device>.csv) is what the other phones read.
+// It is rewritten a few seconds after each photo / completed box, and by "Sync with folder".
+const logTimers = {};
+function scheduleLog(ref){
+  if (!state.dir) return;
+  clearTimeout(logTimers[ref]);
+  logTimers[ref] = setTimeout(() => exclusive(() => writeLogs([ref], true)).catch(() => {}), 3000);
+}
+async function syncFolder(){
+  if (!state.dir) return;
+  if (!await dirReady(true)){ toast('Folder access was not allowed.'); return; }
+  await exclusive(() => writeLogs(allRefs(), true));
+  await loadShared(false);
+}
+async function autoSave(rec){ return exclusive(() => autoSave_(rec)); }
+async function autoSave_(rec){
+  if (!state.dir || state.settings.autosave === false) return;
+  try {
+    if (!await dirReady(false)) throw new Error('folder access expired');
+    const b = state.boxes[bkey(rec.ref, rec.customer, rec.box)] || { started: rec.time }, m = boxMeta(b);
+    const path = photoPath({ customer: rec.customer, year: m.year, date: m.date, ref: folderRef(rec.ref, rec.customer), box: rec.box, layer: rec.layer, subfolder: state.settings.subfolder });
+    delete state.saved[rec.ref];
+    await writeToDir(path, rec.blob); saveWritten(); scheduleLog(rec.ref);
+    toast('Saved to ' + state.dir.name);
+  } catch (e){ toast('Kept on phone, not in folder (' + e.message + '). Use Export > Save to folder.'); }
+}
+async function importFile(file){
+  try {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    let rows;
+    if (/\.xlsx$/i.test(file.name)) rows = await parseXlsx(buf);
+    else if (/\.xls$/i.test(file.name)) throw new Error('Old .xls files are not supported. Save as .xlsx or .csv.');
+    else rows = parseCSV(new TextDecoder().decode(buf));
+    const r = mapRows(rows);
+    state.orders = r.orders; resetSel();
+    await dbPut('meta', 'orders', r.orders);
+    state.tab = 'pack'; render(); toast(r.orders.length + ' rows loaded.');
+  } catch (e){ toast(e.message); }
+}
+async function loadSample(){
+  state.orders = [
+    { so: 'SO-24001', invoice: 'INV-5001', customer: 'ABC Traders', boxes: 3, layers: 0 },
+    { so: 'SO-24002', invoice: 'INV-5002', customer: 'Sri Lakshmi Exports', boxes: 2, layers: 6 },
+    { so: 'SO-24003', invoice: 'INV-5003', customer: 'Kumar & Sons', boxes: 5, layers: 0 },
+    { so: 'SO-24003', invoice: 'INV-5004', customer: 'Kumar Hardware', boxes: 1, layers: 4 }
+  ];
+  resetSel();
+  await dbPut('meta', 'orders', state.orders); state.tab = 'pack'; render(); toast('Sample data loaded.');
+}
+const saveSettings = () => dbPut('meta', 'settings', state.settings).catch(() => {});
+
+// ------------------------------ events ------------------------------
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.tagName === 'A') e.preventDefault();
+  if (state.dir && state.user && !state.autoSyncTried){ state.autoSyncTried = true; (async () => { if (await dirReady(true)) loadShared(true); })().catch(() => {}); }
+  const d = b.dataset;
+  switch (d.act){
+    case 'tab': setTab(d.tab); break;
+    case 'mode': state.mode = d.mode; syncSel(); render(); break;
+    case 'clearsel': resetSel(); render(); break;
+    case 'resume': {
+      if (!resumeOrder(d.ref, d.cust)){ toast('This order is not in the loaded Excel list. Import the list that contains it.'); break; }
+      prefillBox(suggestedBox()); render(); window.scrollTo(0, 0); break;
+    }
+    case 'resumebox': {
+      const rec = state.boxes[d.key]; if (!rec) break;
+      if (resumeOrder(rec.ref, rec.customer)) prefillBox(rec.box);
+      await openBox(rec); break;
+    }
+    case 'setdate': {
+      const m = myBoxes().find(b => boxMeta(b).date === d.date);
+      state.dateIn = d.date; state.yearIn = m ? boxMeta(m).year : d.date.slice(0, 4); render(); break;
+    }
+    case 'vtoday': state.viewDate = todayIso(); state.viewStale = true; render(); break;
+    case 'pickbox': {
+      state.boxIn = d.box; const ex = state.boxes[bkey(state.ref, state.customer, +d.box)];
+      state.layersIn = ex ? String(ex.layers) : '';
+      if (ex){ const m = boxMeta(ex); state.dateIn = m.date; state.yearIn = m.year; }
+      render(); break;
+    }
+    case 'start': await startBox(); break;
+    case 'close': closeBox(); render(); break;
+    case 'shoot': {
+      if (state.dir && !await dirReady(false)){
+        if (await dirReady(true)) toast('Folder access allowed. Tap the photo button again.');
+        else toast('Folder access not allowed. Photos stay on the phone.');
+        break;
+      }
+      $id('cam').click(); break;
+    }
+    case 'target': state.target = +d.layer; render(); break;
+    case 'complete': await completeBox(); break;
+    case 'resetbox': if (state.confirm === 'resetbox') await resetBox(); else askConfirm('resetbox'); break;
+    case 'sample': await loadSample(); break;
+    case 'pickxl': $id('xl').click(); break;
+    case 'zip': await buildZip(d.ref); break;
+    case 'pickdir': await pickDir(); break;
+    case 'cleardir': await clearDir(); break;
+    case 'activate': case 'mkadmin': case 'login': case 'doreset': await authAct(d.act, d); break;
+    case 'adduser': case 'uspw': case 'usoff': case 'usdel': case 'chpw': await userAct(d.act, d); break;
+    case 'resetmode': state.resetMode = !state.resetMode; state.authMsg = ''; render(); break;
+    case 'copyid': try { await navigator.clipboard.writeText(state.dev); toast('Device ID copied.'); } catch (e){ toast('Select and copy the ID manually.'); } break;
+    case 'logout': if (state.active) closeBox(); setUser(null); state.tab = 'pack'; render(); break;
+    case 'connectdrive': await connectDrive(); break;
+    case 'openremote': if (!await dirReady(true)){ toast('Folder access was not allowed.'); break; } await loadBrowse(d.dir.split('/')); break;
+    case 'deepsync': if (await dirReady(true)) await loadShared(false, true); break;
+    case 'loadshared': await syncFolder(); break;
+    case 'delappfolders': await wipeFolder(false); break;
+    case 'emptydir': await wipeFolder(true); break;
+    case 'factory': await factoryReset(); break;
+    case 'mergedirs': await mergeAll(); break;
+    case 'openfolder': if (!await dirReady(true)) { toast('Folder access was not allowed.'); break; } await loadBrowse(d.ref ? pathFor(d.ref) : []); break;
+    case 'bin': await loadBrowse(state.browse.parts.concat(state.browse.items[+d.i].name)); break;
+    case 'bup': await loadBrowse(state.browse.parts.slice(0, -1)); break;
+    case 'bview': { const it = state.browse.items[+d.i]; if (!it.url && it.h && IMG_RE.test(it.name)){ try { toast('Loading photo…'); it.url = URL.createObjectURL(await it.h.getBlob()); } catch (e){ toast(e.message); } } state.viewImg = it.url || ''; render(); break; }
+    case 'bimgclose': state.viewImg = ''; render(); break;
+    case 'bclose': revokeBrowse(); state.browse = null; render(); break;
+    case 'applaunch': location.href = 'intent://#Intent;package=' + d.pkg + ';end'; break;
+    case 'checkdir': state.saved = {}; await checkAll(true); break;
+    case 'saveall': await saveAllToDir(); break;
+    case 'savedir': await saveToDir(d.ref); break;
+    case 'download': {
+      const z = state.zips[d.ref]; if (!z) break;
+      const a = document.createElement('a'); a.href = URL.createObjectURL(z.blob); a.download = z.name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); break;
+    }
+    case 'share': {
+      const z = state.zips[d.ref]; if (!z) break;
+      const f = new File([z.blob], z.name, { type: 'application/zip' });
+      try {
+        if (navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: d.ref });
+        else toast('This phone cannot share ZIP files. Use Download instead.');
+      } catch (err){ if (err.name !== 'AbortError') toast('Share failed. Use Download instead.'); }
+      break;
+    }
+    case 'delref': if (state.confirm === 'del:' + d.ref) await deleteRef(d.ref); else askConfirm('del:' + d.ref); break;
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'boxin'){ state.boxIn = t.value; }
+  else if (t.id === 'layersin'){ state.layersIn = t.value; }
+  else if (t.id === 'yearin'){ state.yearIn = t.value; }
+  else if (t.id === 'worker'){ state.settings.worker = t.value.trim(); saveSettings(); $id('who').textContent = state.settings.worker; }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'selSo' || t.id === 'selInv' || t.id === 'selCust'){ changeSel(t.id, t.value); render(); }
+  else if (t.id === 'vdate'){ if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)){ state.viewDate = t.value; state.viewStale = true; render(); } }
+  else if (t.id === 'boxin'){
+    state.boxIn = t.value; const ex = state.boxes[bkey(state.ref, state.customer, parseInt(t.value, 10))];
+    if (ex){ state.layersIn = String(ex.layers); const m = boxMeta(ex); state.dateIn = m.date; state.yearIn = m.year; }
+    render();
+  }
+  else if (t.id === 'datein'){ state.dateIn = t.value; if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) state.yearIn = t.value.slice(0, 4); render(); }
+  else if (t.id === 'yearin'){ state.yearIn = t.value; }
+  else if (t.id === 'showdone'){ state.showDone = t.checked; resetSel(); render(); }
+  else if (t.id === 'autosv'){ state.settings.autosave = t.checked; saveSettings(); }
+  else if (t.id === 'phonename'){ state.settings.phone = t.value.trim(); saveSettings(); }
+  else if (t.id === 'psize'){ state.settings.px = +t.value; saveSettings(); }
+  else if (t.id === 'stamp'){ state.settings.stamp = t.checked; saveSettings(); }
+  else if (t.id === 'subf'){ state.settings.subfolder = t.checked; saveSettings(); render(); }
+  else if (t.id === 'cam'){ const f = t.files && t.files[0]; t.value = ''; onShot(f); }
+  else if (t.id === 'xl'){ const f = t.files && t.files[0]; t.value = ''; if (f) importFile(f); }
+});
+
+(async function init(){
+  try {
+    state.orders = (await dbGet('meta', 'orders')) || [];
+    state.settings = Object.assign({ worker: '', stamp: true, subfolder: false, autosave: true }, await dbGet('meta', 'settings'), { subfolder: false });
+    let dev = localStorage.getItem('ppl_dev') || await dbGet('meta', 'dev').catch(() => null);
+    if (!dev){ const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(12)); dev = Array.from(r, x => A[x % 32]).join('').replace(/(.{4})(.{4})(.{4})/, '$1-$2-$3'); }
+    try { localStorage.setItem('ppl_dev', dev); } catch (e){} await dbPut('meta', 'dev', dev); state.dev = dev;
+    state.users = (await dbGet('meta', 'users')) || [];
+    try { const c = await dbGet('meta', 'act'); if (c && crypto.subtle) state.act = await verifyCode(c); } catch (e){ state.act = null; }
+    const ss = await dbGet('meta', 'session').catch(() => null);
+    if (actOk() && ss && ss.until > Date.now()){ const u = state.users.find(x => x.id === ss.uid && !x.off); if (u){ state.user = u; state.settings.worker = u.name; } }
+    state.logCache = (await dbGet('meta', 'logcache').catch(() => null)) || {};
+    state.verifiedAt = (await dbGet('meta', 'verifiedAt').catch(() => 0)) || 0;
+    state.logSig = (await dbGet('meta', 'logsig').catch(() => null)) || {};
+    state.known = (await dbGet('meta', 'known').catch(() => null)) || {};
+    state.gcid = (await dbGet('meta', 'gcid').catch(() => null)) || DEFAULT_GCID;
+    state.dir = (await dbGet('meta', 'dir').catch(() => null)) || null;
+    if (state.dir && state.dir.drive) state.dir = driveDir(state.dir.drive.id, state.dir.drive.name, true);
+    state.done = (await dbGet('meta', 'done').catch(() => null)) || {};
+    state.written = (await dbGet('meta', 'written').catch(() => null)) || {};
+    state.remote = (await dbGet('meta', 'remote').catch(() => null)) || [];
+    await refreshStore();
+    await restoreBox();
+    setTimeout(async () => { if (state.user && state.dir){ try { await exclusive(() => writeLogs(allRefs(), true)); } catch (e){} loadShared(true); } }, 800);
+  } catch (e){ state.fatal = 'This browser is blocking local storage. Open the app in normal (not private) Chrome.'; }
+  render();
+})();
+</script>
+</body>
+</html>
