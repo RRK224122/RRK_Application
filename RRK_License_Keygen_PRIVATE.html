@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RRK License Key Generator (PRIVATE)</title>
+<style>
+:root{color-scheme:light dark;--bg:#F4F1EA;--surface:#fff;--text:#221E17;--dim:#6B6252;--border:#D9D2C2;--accent:#B5651D;--ink:#fff;--ok:#2E7D4F;--bad:#B33D2E;}
+@media (prefers-color-scheme:dark){:root{--bg:#10151B;--surface:#1A212B;--text:#E9EDF2;--dim:#9AA7B6;--border:#2B3542;--accent:#E2963C;--ink:#1A140A;--ok:#5BC98A;--bad:#E2694F;}}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;padding:20px;}
+.card{max-width:520px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
+h1{font-size:18px;margin:0 0 4px;} .warn{font-size:12.5px;color:var(--bad);margin-bottom:16px;line-height:1.5;}
+label{display:block;font-size:12.5px;color:var(--dim);margin:12px 0 4px;}
+input,textarea{width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);font:inherit;}
+textarea{font-family:ui-monospace,monospace;font-size:12px;}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+button{padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;cursor:pointer;}
+button.p{background:var(--accent);border-color:var(--accent);color:var(--ink);font-weight:600;}
+#msg{font-size:12.5px;margin-top:10px;min-height:16px;}
+</style></head><body>
+<div class="card">
+<h1>RRK License Key Generator</h1>
+<div class="warn">PRIVATE — this file contains your signing key. Keep it on your own computer only. Never send it to customers or put it online.</div>
+<label>Customer’s Device ID (from their activation screen)</label>
+<input id="dev" placeholder="RRK-XXXX-XXXX-XXXX" autocomplete="off">
+<label>Customer / shop name (optional)</label>
+<input id="cust" autocomplete="off">
+<label>Plan label</label>
+<input id="plan" value="Standard" autocomplete="off">
+<label>Valid until (leave empty for lifetime)</label>
+<input id="exp" type="date">
+<div class="row">
+<button type="button" data-m="1">+1 month</button><button type="button" data-m="6">+6 months</button><button type="button" data-m="12">+1 year</button><button type="button" id="life">Lifetime</button>
+</div>
+<div class="row"><button type="button" class="p" id="gen">Generate activation key</button></div>
+<label>Activation key</label>
+<textarea id="out" rows="6" readonly></textarea>
+<div class="row"><button type="button" id="copy">Copy key</button></div>
+<div id="msg"></div>
+</div>
+<script>
+const PRIVATE_JWK = {"key_ops":["sign"],"ext":true,"kty":"EC","x":"UAORVbJEB4TtKofd131sp8-f1gbMaU8P14V06nMscHg","y":"PW0Ayrbzk8AlBn4eU6KLcgpxOEqo8zQkb-nHypYNQ4s","crv":"P-256","d":"bK4w1OqdACO2VGNrzqfpILZnvnGrTWc67CTlQKfmGiE"};
+const $=id=>document.getElementById(id);
+function b64u(bytes){let s='';bytes=new Uint8Array(bytes);for(const b of bytes)s+=String.fromCharCode(b);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const d=new Date();d.setMonth(d.getMonth()+Number(b.dataset.m));$('exp').value=iso(d);});
+$('life').onclick=()=>{$('exp').value='';};
+$('gen').onclick=async()=>{
+  const msg=$('msg');msg.style.color='var(--bad)';
+  const dev=$('dev').value.trim().toUpperCase();
+  if(!/^RRK-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/.test(dev)){msg.textContent='Device ID must look like RRK-1A2B-3C4D-5E6F.';return;}
+  const payload=JSON.stringify({d:dev,n:$('cust').value.trim(),p:$('plan').value.trim()||'Standard',e:$('exp').value||'',i:iso(new Date())});
+  const pb=b64u(new TextEncoder().encode(payload));
+  const key=await crypto.subtle.importKey('jwk',PRIVATE_JWK,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);
+  const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},key,new TextEncoder().encode(pb));
+  $('out').value='RRK1.'+pb+'.'+b64u(sig);
+  msg.style.color='var(--ok)';msg.textContent='Key created for '+dev+($('exp').value?' · valid until '+$('exp').value:' · lifetime')+'.';
+};
+$('copy').onclick=async()=>{const t=$('out').value;if(!t)return;try{await navigator.clipboard.writeText(t);$('msg').style.color='var(--ok)';$('msg').textContent='Copied.';}catch(e){$('out').select();}};
+</script></body></html>
